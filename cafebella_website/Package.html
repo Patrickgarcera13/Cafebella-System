@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Package</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Domine:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', Roboto, Arial, sans-serif;
+  background: #f5f5f5;
+}
+
+/******************************** TOPBAR ********************************/
+.topbar {
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 60px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+}
+.topbar-center {
+  flex: 1;
+  text-align: center;
+  color: #114500;
+  font-size: 13px;
+}
+.topbar-right {
+  display: flex;
+  gap: 15px;
+}
+.topbar-right img {
+  width: 18px;
+}
+.book-link {
+  color: #114500;
+  font-weight: bold;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.book-link:hover {
+  color: #0a2f00;
+}
+
+/******************************** NAVBAR ********************************/
+.navbar {
+  background: #114500;
+  display: flex;
+  align-items: center;
+  padding: 15px 60px;
+  position: fixed;
+  top: 36px;
+  left: 0;
+  width: 100%;
+  z-index: 999;
+}
+.header-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+}
+.nav-logo img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+}
+.nav-menu {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+  list-style: none;
+}
+.nav-menu a {
+   color: white;
+  text-decoration: none;
+  position: relative;
+  padding-bottom: 5px;
+}
+.nav-menu a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  height: 2px;
+  background-color: white;
+  transition: width 0.3s ease;
+}
+.nav-menu a.active::after {
+  width: 100%;
+}
+.nav-menu a:hover::after {
+  width: 100%;
+}
+.nav-search {
+  position: relative;
+  margin-left: auto;
+}
+.nav-search input {
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  outline: none;
+  width: 220px;
+  font-family: 'Domine', serif;
+}
+.suggestions-box {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  width: 100%;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  display: none;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+.suggestion-item {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+.suggestion-item:hover {
+  background: #114500;
+  color: white;
+}
+.search-box {
+  position: relative;
+  width: 220px;
+}
+.search-box input {
+  width: 100%;
+  padding: 8px 12px 8px 35px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  outline: none;
+  font-family: 'Domine', serif;
+}
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/******************************** SCROLL ANIMATION ********************************/
+.scroll-animate {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 0.8s ease;
+}
+.scroll-animate.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/******************************** RISE ANIMATION ********************************/
+.rise-title,
+.rise-desc,
+.rise-item {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.rise-title.show,
+.rise-desc.show,
+.rise-item.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/******************************** SECTION ********************************/
+.section {
+  padding: 40px 80px; 
+  margin-top: 100px; 
+}
+.section-title {
+  text-align: center;
+  margin-bottom: 50px;
+}
+.section-title h2 {
+  color: #114500;
+  font-size: 32px;
+}
+.section-title p {
+  font-size: 17px;
+  max-width: 600px;
+  margin: 10px auto;
+}
+
+/******************************** GRID ********************************/
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+}
+
+/******************************** CARD ********************************/
+.card {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  transition: 0.3s;
+}
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+}
+.card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+.card-content {
+  padding: 20px;
+}
+.card h3 {
+  color: #114500;
+  margin-bottom: 10px;
+}
+.price {
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+.card p {
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+.btn {
+  display: inline-block;
+  padding: 12px 28px;          
+  background: #114500;         
+  color: white;                 
+  border: 2px solid #114500;    
+  border-radius: 50px;          
+  font-family: 'Domine', serif;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: none;
+  transition: 0.3s ease;
+}
+.btn:hover {
+  background: white;             
+  color: #114500;                
+  border: 2px solid #114500;   
+}
+
+/******************************** FOOTBAR ********************************/
+.footbar {
+  background: white;
+  border-top: 2px solid #114500;
+  border-bottom: 2px solid #114500;
+  text-align: center;
+  padding: 15px 20px;
+  font-family: 'Domine', serif;
+  color: #114500;
+  font-size: 14px;
+  margin-top: 40px;
+}
+
+/******************************** FOOTER ********************************/
+.footer {
+  text-align: center;
+  padding: 20px;
+}
+.footer {
+  background: #eee;
+  padding: 40px 60px;
+}
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.footer-logo img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;    
+}
+.footer-col {
+  font-size: 13px;
+}
+.footer-col h4 {
+  margin-bottom: 10px;
+  color: #114500;
+}
+.footer-col p,
+.footer-col a {
+  display: block;
+  color: #114500;
+  text-decoration: none;
+  margin-bottom: 5px;
+}
+.footer-bottom {
+  text-align: center;
+  margin-top: 20px;
+  color: #114500;
+}
+
+/******************************** GCASH LOGO ********************************/
+.gcash img {
+  width: 40px;
+  height: 40px;         
+  border-radius: 50%;    
+  object-fit: cover;      
+}
+</style>
+</head>
+<body>
+<!-------------------------------- TOPBAR ------------------------------------->
+  <div class = "header-wrapper">
+      <div class="topbar">
+      <div class="topbar-center">Planning an event? <a href="Package.html" class="book-link">Book Now</a> and reserve your date with Cafe Bella.</div>
+
+  <div class="topbar-right">
+      <a href="https://www.facebook.com/share/1CiwKkiCkY/" target="_blank" rel="noopener">
+      <img src="https://cdn-icons-png.flaticon.com/512/733/733547.png"></a>
+      <a href="https://www.tiktok.com/@christiandavidangelo?_r=1&_t=ZS-94tpPJhFWzZ" target="_blank" rel="noopener">
+      <img src="https://cdn-icons-png.flaticon.com/512/3046/3046121.png"></a>
+   </div>
+  </div>
+
+<!-------------------------------- NAVBAR ------------------------------------->
+  <div class="navbar">
+    <div class="nav-logo">
+      <a href="index.html">
+      <img src="IMAGES/Cafebella.jpg" alt="Cafe Bella Logo">
+  </div>
+
+    <ul class="nav-menu">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="Menu.html">Menu</a></li>
+      <li><a href="Package.html" class="active">Packages</a></li>
+      <li><a href="Location.html">Location</a></li>
+      <li><a href="FAQ.html">FAQs</a></li>
+    </ul>
+<!-------------------------------- SEARCH BAR (NAVBAR) ------------------------------------->
+  <div class="nav-search">
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Search menu..." onkeyup="showSuggestions()">
+      <span class="search-icon">🔍</span>
+    </div>
+    
+    <div id="suggestions" class="suggestions-box"></div>
+  </div>
+</div>
+
+<!-------------------------------- SECTION ------------------------------------->
+<div class="section rise-item">
+
+  <div class="section-title rise-item">
+    <h2 rise-desc>Our Packages</h2>
+    <p rise-desc>Cafe BELLA offers curated event packages designed for memorable celebrations.Choose from our coffee, matcha, and tattoo booth services tailored to your event.Each package is created to deliver a unique and enjoyable experience. for events.</p>
+  </div>
+
+  <div class="cards rise-item">
+
+    <div class="card rise-item">
+      <img src="IMAGES/Coffeebooth.jpg">
+      <div class="card-content">
+        <h3>Coffee Booth</h3>
+        <div class="price">₱5,000 (50 cups)</div>
+        <p>Experience a premium mobile café setup with professional barista service, featuring expertly crafted espresso drinks and specialty beverages. Includes two skilled baristas serving up to 50 guests, with a choice of four flavors, both coffee and non-coffee, all served in 16 oz cups.</p>
+        <a href="Bookyourevent.html" class="btn" onclick="selectService('coffee')">Book Now</a>
+      </div>
+    </div>
+
+    <div class="card rise-item">
+      <img src="IMAGES/Matchabooth.jpg">
+      <div class="card-content">
+        <h3>Matcha Booth</h3>
+        <div class="price">₱9,000 (50 cups)</div>
+        <p>Experience an authentic Japanese matcha booth featuring ceremonial-grade matcha, specialty lattes, and wellness-focused beverages. Includes ceremonial matcha with Oatside milk, two skilled baristas serving up to 50 cups, with a choice of three flavors, all served in 16 oz cups.</p>
+        <a href="Bookyourevent.html" class="btn" onclick="selectService('matcha')">Book Now</a>
+      </div>
+    </div>
+
+    <div class="card rise-item">
+      <img src="IMAGES/Tattoobooth.jpg">
+      <div class="card-content">
+        <h3>Tattoo Event</h3>
+        <div class="price">₱1,000 (2 tattoos)</div>
+        <p>Fun temporary tattoo station in collaboration with a professional tattoo artist, featuring a wide selection of minimalist designs using safe, skin-friendly materials. Customers can enjoy 2 minimalist tattoos for ₱1,000, which includes a free 16 oz drink.</p>
+        <a href="Bookyourevent.html" class="btn" onclick="selectService('tattoo')">Book Now</a>
+      </div>
+    </div>
+
+    <script>
+      function selectService(serviceName) {
+          // Isave sa localStorage para mabasa sa Book Your Event page
+          localStorage.setItem("selectedService", serviceName);
+      }
+    </script>
+
+  </div>
+</div>
+<!-------------------------------- FOOTBAR ------------------------------------->
+<div class="footbar rise-item">
+  Kape lang saglit tapos laban ulit
+</div>
+<!-------------------------------- FOOTER ------------------------------------->
+<div class="footer rise-item">
+
+  <div class="footer-top rise-item">
+
+    <div class="footer-logo rise-item">
+      <img src="IMAGES/Cafebella.jpg">
+    </div>
+
+    <div class="footer-col rise-item">
+      <h4>Quick Links</h4>
+      <a href="index.html">Home</a>
+      <a href="Menu.html">Menu</a>
+      <a href="Package.html">Event Packages</a>
+      <a href="#">Feedback</a>
+      <a href="#">Location</a>
+      <a href="#">FAQ's</a>
+    </div>
+
+    <div class="footer-col rise-item">
+      <h4>Services</h4>
+      <a href="Package.html">Coffee Booth</a>
+      <a href="Package.html">Matcha Booth</a>
+      <a href="Package.html">Tattoo Event</a>
+    </div>
+
+    <div class="footer-col rise-item">
+      <h4>About</h4>
+      <a href="#">Contact Our Team</a>
+    </div>
+
+    <div class="footer-col rise-item">
+      <h4>Socials</h4>
+      <a href="https://www.facebook.com/share/1CiwKkiCkY/" target="_blank" rel="noopener">Facebook</a>
+      <a href="https://www.tiktok.com/@christiandavidangelo?_r=1&_t=ZS-94tpPJhFWzZ" target="_blank" rel="noopener">Tiktok</a>
+    </div>
+
+    <div class="footer-col gcash rise-item">
+      <h4>We accept</h4>
+      <img src="IMAGES/GCash.png">
+    </div>
+
+  </div>
+
+  <div class="footer-bottom rise-item">
+    © 2026 Cafe BELLA. All rights reserved.
+  </div>
+</body>
+</html>
+<script>
+/******************************** CONSISTENT RISE ANIMATION ********************************/
+
+const riseElements = document.querySelectorAll(".rise-title, .rise-desc, .rise-item, .event-card");
+
+function handleRise() {
+  const triggerPoint = window.innerHeight * 0.85;
+
+  riseElements.forEach(el => {
+    const elementTop = el.getBoundingClientRect().top;
+
+    if (elementTop < triggerPoint) {
+      el.classList.add("show");
+    } else {
+      el.classList.remove("show");
+    }
+  });
+}
+
+window.addEventListener("scroll", handleRise);
+window.addEventListener("load", handleRise);
+
+/******************************** SELECTED SERVICE **************************/
+document.addEventListener("DOMContentLoaded", function() {
+  const selectedService = localStorage.getItem("selectedService");
+
+  if(selectedService) {
+    const boxes = document.querySelectorAll(".service-box");
+    
+    boxes.forEach(box => {
+      const title = box.querySelector(".service-title").textContent.toLowerCase();
+
+      if(title.includes(selectedService)) {
+
+        box.style.background = "#114500";
+        box.style.color = "white";
+        box.dataset.selected = "true";
+      } else {
+
+        box.style.pointerEvents = "none";
+        box.style.opacity = "0.5";
+      }
+    });
+
+/******************************** REDIRECT DEPENDE SA PAYMENT TYPE **************************/
+    const total = document.querySelector(".total");
+    if(selectedService === "coffee") total.textContent = "₱5,000";
+    if(selectedService === "matcha") total.textContent = "₱9,000";
+    if(selectedService === "tattoo") total.textContent = "₱1,000";
+
+    // Clear localStorage after use
+    localStorage.removeItem("selectedService");
+  }
+});
+</script>

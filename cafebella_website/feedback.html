@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Customer Feedback</title>
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Domine:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', Roboto, Arial, sans-serif;
+}
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: linear-gradient(135deg, #dfead9, #c8d8c0);
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* ⬅️ important */
+
+  padding: 40px 0; /* ⬅️ adds top & bottom space */
+  min-height: 100vh;
+}
+body::before {
+  content: "";
+  position: fixed;
+  top: -100px;
+  right: -100px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(67,160,71,0.25), transparent);
+  z-index: -1;
+}
+body::after {
+  content: "";
+  position: fixed;
+  bottom: -120px;
+  left: -120px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(27,94,32,0.2), transparent);
+  z-index: -1;
+}
+.feedback-container {
+  width: 520px;
+  background: #ffffff;
+  padding: 35px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+}
+.feedback-title {
+  text-align: center;
+  margin-bottom: 25px;
+}
+.feedback-title h1 {
+  font-size: 28px;
+  color: #1b4d0f;
+  margin-bottom: 5px;
+}
+.feedback-title p {
+  font-size: 14px;
+  color: #666;
+}
+.feedback-box {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.label {
+  color: #1b4d0f;
+  font-size: 15px;
+  font-weight: 600;
+}
+.stars {
+  display: flex;
+  gap: 10px;
+}
+.stars span {
+  font-size: 34px;
+  cursor: pointer;
+  color: #ddd;
+  transition: 0.25s ease;
+}
+.stars span.hover,
+.stars span.active {
+  color: #ffc107;
+  transform: scale(1.15);
+}
+textarea {
+  width: 100%;
+  height: 120px;
+  border: 1.5px solid #ddd;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  transition: 0.2s;
+}
+textarea:focus {
+  border-color: #1b4d0f;
+  box-shadow: 0 0 0 2px rgba(27,77,15,0.1);
+}
+/* YES/NO BUTTONS */
+.recommend {
+  margin-top: 10px;
+}
+.btn-group {
+  display: flex;
+  gap: 10px;
+}
+.option-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 30px;
+  border: 1.5px solid #ccc;
+  background: #f9f9f9;
+  color: #555;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.option-btn:hover {
+  background: #e8f5e9;
+  border-color: #1b4d0f;
+  color: #1b4d0f;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(27,77,15,0.15);
+}
+.option-btn.active {
+  background: #1b4d0f;
+  color: #fff;
+  border-color: #1b4d0f;
+  box-shadow: 0 6px 15px rgba(27,77,15,0.25);
+}
+.send-btn {
+  width: 100%;
+  margin-top: 25px;
+  padding: 14px;
+  background: linear-gradient(135deg, #1b4d0f, #2e7d32);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.send-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(27,77,15,0.35);
+  filter: brightness(1.05);
+}
+.send-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+</style>
+</head>
+
+<body>
+
+<div class="feedback-container">
+
+  <div class="feedback-title">
+    <h1>Customer Feedback</h1>
+    <p>Help us improve your experience</p>
+  </div>
+
+  <div class="feedback-box">
+
+    <label class="label">Rate your Experience</label>
+
+    <div class="stars" id="starRating">
+      <span data-value="1">★</span>
+      <span data-value="2">★</span>
+      <span data-value="3">★</span>
+      <span data-value="4">★</span>
+      <span data-value="5">★</span>
+    </div>
+
+    <input type="hidden" id="ratingValue">
+
+    <label class="label">Your Comments</label>
+    <textarea></textarea>
+
+    <div class="recommend">
+      <label class="label">Would you recommend us?</label>
+
+      <div class="btn-group">
+        <button class="option-btn">YES</button>
+        <button class="option-btn">NO</button>
+      </div>
+    </div>
+
+  </div>
+
+  <button class="send-btn">SEND</button>
+
+</div>
+
+<script>
+const stars = document.querySelectorAll("#starRating span");
+const ratingValue = document.getElementById("ratingValue");
+let currentRating = 0;
+
+// HOVER
+stars.forEach((star, index) => {
+  star.addEventListener("mouseover", () => {
+    stars.forEach((s, i) => {
+      s.classList.toggle("hover", i <= index);
+    });
+  });
+
+  // CLICK
+  star.addEventListener("click", () => {
+    currentRating = index + 1;
+    ratingValue.value = currentRating;
+
+    stars.forEach((s, i) => {
+      s.classList.toggle("active", i < currentRating);
+    });
+  });
+});
+
+// REMOVE HOVER (fix flicker issue)
+document.getElementById("starRating").addEventListener("mouseleave", () => {
+  stars.forEach(s => s.classList.remove("hover"));
+});
+</script>
+
+</body>
+</html>
