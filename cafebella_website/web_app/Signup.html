@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sign Up</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+body {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* BACKGROUND IMAGE */
+  background: linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)),
+              url('IMAGES/BG.jpg') no-repeat center center;
+  background-size: cover;
+  background-attachment: fixed;
+
+  /* FADE EFFECT */
+  opacity: 0;
+  transition: opacity 0.4s ease;
+
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url('IMAGES/BG.jpg') center/cover no-repeat;
+  filter: blur(8px);
+  z-index: -1;
+}
+body.fade-in {
+  opacity: 1;
+}
+
+/* MAIN CONTAINER (SAME AS LOGIN) */
+.container {
+  width: 850px;
+  height: 480px;
+  display: flex;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+}
+
+/* LEFT IMAGE */
+.left-panel {
+  width: 50%;
+  background: url('IMAGES/BG.jpg') no-repeat center;
+  background-size: cover;
+}
+
+/* RIGHT FORM */
+.right-panel {
+  width: 50%;
+  background: linear-gradient(135deg, #3b2416, #5a3a25);
+  color: white;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* TITLE */
+.right-panel h1 {
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  font-size: 13px;
+  margin-bottom: 20px;
+  color: #ddd;
+}
+
+/* INPUT */
+input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  border: none;
+  outline: none;
+}
+button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 25px;
+  border: none;
+  background: #ffffff;
+  color: #2e7d32;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.3s ease;
+
+  /* IMPORTANT FOR SHINE EFFECT */
+  position: relative;
+  overflow: hidden;
+}
+
+/* HOVER → GREEN (SAME AS LOGIN) */
+button:hover {
+  background: linear-gradient(135deg, #4CAF50, #2e7d32);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+}
+
+/* CLICK */
+button:active {
+  transform: scale(0.96);
+}
+
+/* SHINE EFFECT (SAME AS LOGIN) */
+button::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.6),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+button:hover::after {
+  left: 130%;
+}
+
+/* DIVIDER */
+.divider {
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #aaa;
+}
+
+.divider span {
+  margin: 0 10px;
+  font-size: 13px;
+}
+
+/* SOCIAL */
+.social {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.social img {
+  width: 22px;
+}
+
+/* LOGIN LINK */
+.login {
+  text-align: center;
+  font-size: 14px;
+}
+
+.login a {
+  color: #fff;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.login a:hover {
+  text-decoration: underline;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- LEFT IMAGE -->
+  <div class="left-panel"></div>
+
+  <!-- RIGHT FORM -->
+  <div class="right-panel">
+
+    <h1>Create Account</h1>
+    <p class="subtitle">Sign up to get started</p>
+
+    <form id="signupForm"> 
+      <input type="text" id="full_name" placeholder="Full Name" required> 
+      <input type="email" id="email" placeholder="Email" required> 
+      <input type="password" id="password" placeholder="Password" required> 
+      <input type="password" id="confirm_password" placeholder="Confirm Password" required> 
+
+      <p id="message" style="color: yellow; text-align: center; margin-top: 10px;"></p> 
+
+      <button type="submit">Sign Up</button>
+    </form>
+
+    <div class="divider"><span>or</span></div>
+
+    <div class="social">
+      <a href="#"><img src="IMAGES/facebookicon.png"></a>
+      <a href="#"><img src="IMAGES/gmailicon.png"></a>
+    </div>
+
+    <p class="login">
+      Already have an account?
+      <a href="login.html">Log in</a>
+    </p>
+
+  </div>
+
+</div>
+<script>
+  // Optional: Fade IN when page loads
+  window.addEventListener("load", () => {
+    document.body.style.opacity = "1";
+  });
+
+  document.getElementById("signupForm").addEventListener("submit", function(e){
+    e.preventDefault(); // Prevent default form submission
+
+    const full_name = document.getElementById("full_name").value;
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const confirm_password = document.getElementById("confirm_password").value;
+
+    const message = document.getElementById("message"); // Get the message element
+
+    // ✅ CHECK PASSWORD MATCH
+    if(password !== confirm_password){
+        message.innerHTML = "❌ Passwords do not match!";
+        message.style.color = "red"; // Added color for error message
+        return;
+    }
+    // Simple password strength check (optional, you can add more complex checks)
+    if(password.length < 6){
+        message.innerHTML = "❌ Password must be at least 6 characters long.";
+        message.style.color = "red";
+        return;
+    }
+
+
+    message.innerHTML = "⏳ Creating account...";
+    message.style.color = "#000"; // Black or grey color for pending state
+
+    // Use relative path for the fetch URL
+    fetch("webapp_php/signup.php", { 
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            full_name: full_name,
+            email: email,
+            password: password
+        })
+    })
+    .then(res => {
+        // Always check for response.ok before parsing as JSON
+        if (!res.ok) {
+            // If response is not OK (e.g., 404, 500), throw an error
+            // This catches HTTP errors like 404 Not Found, 500 Internal Server Error
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json(); // Parse the JSON response
+    })
+    .then(data => {
+       console.log(data); // For debugging
+        if(data.success){
+            message.innerHTML = "✅ Account created! Waiting for owner approval.";
+            message.style.color = "green"; // Added color for success message
+            
+            setTimeout(() => {
+                window.location.href = "login.html";
+            }, 2000); // 2 seconds delay before redirecting
+        } else {
+            message.innerHTML = "❌ " + data.message; // Display specific error message from server
+            message.style.color = "red";
+        }
+    })
+    .catch(err => {
+        // This catches network errors or errors thrown from the .then(res => { ... }) block
+        message.innerHTML = "❌ Server error! Please check your connection or server logs.";
+        message.style.color = "red";
+        console.error("Fetch error:", err); // Log the actual error for debugging
+    });
+});
+</script>
+
+</body>
+</html>
