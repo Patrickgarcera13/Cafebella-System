@@ -285,6 +285,43 @@ if ($action == 'deleteProduct') {
     exit;
 }
 
+//UPDATE PRODUCT
+if ($action == "updateProductFull") {
+
+    $id = $_POST['product_id'];
+    $name = $_POST['product_name'];
+    $price = $_POST['price'];
+    $image = $_POST['product_image'];
+    $variants = $_POST['variants'];
+
+    // update main product
+    $stmt = $pdo->prepare("
+        UPDATE products 
+        SET product_name=?, base_price=?, product_image=?
+        WHERE product_id=?
+    ");
+    $stmt->execute([$name, $price, $image, $id]);
+
+    // delete old variants
+    $pdo->prepare("DELETE FROM product_variants WHERE product_id=?")
+        ->execute([$id]);
+
+    // insert new variants
+    $v = json_decode($variants, true);
+
+    if (is_array($v)) {
+        foreach ($v as $row) {
+            $stmt = $pdo->prepare("
+                INSERT INTO product_variants (product_id, variant_name, price)
+                VALUES (?, ?, ?)
+            ");
+            $stmt->execute([$id, $row['variant_name'], $row['price']]);
+        }
+    }
+
+    echo json_encode(["status"=>"success","message"=>"Product updated"]);
+}
+
 // --- INVALID ACTION ---
 echo json_encode(['status' => 'error', 'message' => '❌ Invalid action']);
 ?>
