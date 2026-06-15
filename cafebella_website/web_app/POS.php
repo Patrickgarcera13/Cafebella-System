@@ -310,10 +310,11 @@ body {
   display: flex;
   flex: 1;
   gap: 20px;
-  overflow: visible; /* ✅ Hayaan lang, pero naka-fix na yung kanan */
+  overflow: hidden;
   min-height: 0;
-  align-items: flex-start; /* ✅ Para hindi umunat yung kanan kasabay ng kaliwa */
+  align-items: stretch;
 }
+
 .content-wrapper {
   flex: 1;
   min-height: 0;
@@ -425,18 +426,28 @@ body {
 }
 .variant-row {
   display: flex;
-  gap: 6px;
-  align-items: center;
-  margin: 6px 0;
-  padding: 6px;
-  background: #f8f9fa;
-  border-radius: 6px;
+  justify-content: space-between;
+  gap: 4px;
+  margin-top: 4px;
+  width: 100%;
 }
-.variant-row input {
+.variant-col {
+  text-align: center;
   flex: 1;
-  padding: 6px !important;
-  margin: 0 !important;
-  font-size: 13px !important;
+  min-width: 0; /* ✅ Para pumapayag lumumiit */
+}
+.variant-name {
+  font-size: 12px;
+  color: #444;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* ✅ Putulin kung sobrang haba */
+}
+.variant-price {
+  font-size: 12px;
+  color: #2e7d32;
+  font-weight: bold;
+  margin-top: 2px;
 }
 /******************************** SCROLLBAR ********************************/
 ::-webkit-scrollbar {
@@ -449,54 +460,57 @@ body {
 }
 /******************************** PRODUCTS ********************************/
 .products {
-  flex: 1; /* Kukunin nito ang natitirang space */
-  overflow-y: auto;
-  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 15px;
+  grid-template-columns: repeat(5, 1fr); /* 5 bawat linya */
+  gap: 16px;
+  width: 100%;
 }
+.products-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 5px;
+  min-height: 0;
+  height: 100%;
+  display: block;
+}
+
+#categories {
+  margin-bottom: 15px;
+}
+
 .card {
-  background: #fff;
+  background: #ffffff;
   padding: 12px;
-  border-radius: 14px;
+  border-radius: 8px;
   cursor: pointer;
   text-align: center;
-  height: 210px;
+  width: 100%; /* ✅ Sakto sa lapad ng grid */
+  min-height: 180px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  justify-content: flex-start;
+  gap: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   transition: all 0.25s ease;
-  border: 1px solid #f1f1f1;
+  border: 1px solid #eaeaea;
+  white-space: nowrap; /* ✅ Para hindi pumapangalawa ang linya */
 }
+
 
 .card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 25px rgba(0,0,0,0.15);
-  border-color: #2e7d32;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  border-color: #c8e6c9;
 }
+
 .card img {
   width: 100%;
-  height: 90px;
+  height: 120px;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 6px;
 }
-.card h4 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 
-  overflow: hidden;
-  line-clamp: 2; /* future standard */
-}
-.card p {
-  font-size: 16px;
-  color: #2e7d32;
-  font-weight: bold;
-  margin-top: auto; /* 🔥 push to bottom */
-}
 .card .delete-btn {
   width: 100%;
   justify-content: center;
@@ -825,13 +839,13 @@ button.action:hover {
 }
 .left-panel {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   flex: 3;
   min-height: 0;
+  height: 100%;
   padding: 20px 30px;
-  align-items: flex-start; /* Para nasa taas */
+  overflow: hidden;
 }
-
 
 .content-wrapper-inside {
   display: flex;
@@ -982,6 +996,7 @@ button.action:hover {
 }
 </style>
 </head>
+
 <body>
 
 <!--------------------------------------- SIDEBAR ---------------------------------------------> 
@@ -1062,14 +1077,16 @@ button.action:hover {
                   <?php if(isAdmin()): ?>
                   <button id="editMenuBtn" class="action">✏️ Edit Menu</button>
                   <?php endif; ?>
+                  
               <div class="categories" id="categories"></div>
 
                 <button id="addProductBtnFixed" onclick="addProduct()">+ Add Product</button>
-          </div>
-
                     <!-- PRODUCTS -->
-              <div class="products" id="products"></div>
-    
+              <div class="products-container">
+                <div class="products" id="products"></div>
+              </div>
+              
+            </div>
       </div>
 
       <!-- RIGHT COLUMN (ORDER PANEL FULL HEIGHT) -->
@@ -1281,8 +1298,29 @@ button.action:hover {
     <div class="modal-actions" style="margin-top:20px;">
       <button onclick="submitAddProduct()" class="action">✅ Save Product</button>
       <button onclick="closeAddProductModal()" class="action cancel-btn">❌ Cancel</button>
-
     </div>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ EDIT PRODUCT -->
+<div id="editProductModal" class="modal">
+  <div class="modal-content">
+    <h3>Edit Product</h3>
+
+    <div class="section">
+      <label>Product Name</label>
+      <input type="text" id="editProductName">
+    </div>
+
+    <div class="section">
+      <label>Base Price</label>
+      <input type="number" id="editProductPrice">
+    </div>
+
+    <div class="modal-actions">
+      <button onclick="saveEditProduct()" class="action">Save</button>
+      <button onclick="closeEditProductModal()" class="action cancel-btn">Cancel</button>
     </div>
   </div>
 </div>
@@ -1297,854 +1335,1064 @@ const sidebarButtons = document.querySelectorAll('.sidebar .menu button');
 
 /******************************** GET THE CURRENT PAGE ********************************/
 function getCurrentPage() {
-  return window.location.pathname.split("/").pop(); 
+    return window.location.pathname.split("/").pop();
 }
 
 /******************************** HIGHLIGHT THE BUTTON OF THE CURRENT PAGE ********************************/
 function highlightSidebar() {
-  const currentPage = getCurrentPage().toLowerCase();
-  sidebarButtons.forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.dataset.page.toLowerCase() === 'pos.php') {
-      btn.classList.add('active');
-    }
-  });
+    const currentPage = getCurrentPage().toLowerCase();
+    sidebarButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.page.toLowerCase() === 'pos.php') {
+            btn.classList.add('active');
+        }
+    });
 }
-
 highlightSidebar();
 
 /******************************** SIDEBAR ********************************/
 sidebarButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const targetPage = btn.dataset.page;
-    sidebarButtons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    window.location.href = targetPage;
-  });
+    btn.addEventListener('click', () => {
+        const targetPage = btn.dataset.page;
+        sidebarButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        window.location.href = targetPage;
+    });
 });
 
 window.addEventListener('popstate', () => {
-  highlightSidebar();
+    highlightSidebar();
 });
 
 /******************************** ADMIN DROPDOWN ********************************/
 function toggleDropdown() {
-  const dropdown = document.getElementById("adminDropdown");
-  dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+    const dropdown = document.getElementById("adminDropdown");
+    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
 }
 
 function logout() {
-  window.location.href = "login.html";
+    window.location.href = "login.html";
 }
 
 window.onclick = function(e) {
-  if (!e.target.closest('.admin')) {
-    document.getElementById("adminDropdown").style.display = "none";
-  }
+    if (!e.target.closest('.admin')) {
+        document.getElementById("adminDropdown").style.display = "none";
+    }
 };
 
 /******************************** GLOBAL VARIABLES ********************************/
-let menu = {}; 
+let menu = {};
 let cart = [];
 let editMode = false;
-let currentCategory = { id: null, name: null }; 
-let allCategories = []; 
+let currentCategory = { id: null, name: null };
+let allCategories = [];
 const API_URL = '../website_php/api.php';
 
 /******************************** EDIT MENU BUTTON ********************************/
 const editBtn = document.getElementById("editMenuBtn");
-if(editBtn){
-  editBtn.onclick = function(){
-    editMode = !editMode;
-    this.innerText = editMode ? "💾 Save Changes" : "✏️ Edit Menu";
-    this.classList.toggle("save-mode", editMode);
-    renderCategories();
-    renderCurrentCategory();
-  };
+if (editBtn) {
+    editBtn.onclick = async function() {
+        editMode = !editMode;
+        if (!editMode) {
+            await saveMenuChanges();
+            await loadMenuFromDatabase();
+        }
+        this.innerText = editMode ? "💾 Save Changes" : "✏️ Edit Menu";
+        renderCategories();
+        renderCurrentCategory();
+    };
+}
+
+async function saveMenuChanges() {
+    try {
+        const res = await fetch(API_URL + '?action=saveMenu', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ categories: allCategories, menu: menu })
+        });
+        const data = await res.json();
+        console.log("SAVE RESULT:", data);
+    } catch (err) {
+        console.error("SAVE ERROR:", err);
+    }
 }
 
 /******************************** CATEGORY RENDER ********************************/
-function renderCategories(){
-  const container = document.getElementById("categories");
-  container.innerHTML = "";
+function renderCategories() {
+    const container = document.getElementById("categories");
+    container.innerHTML = "";
 
-  // ALL BUTTON
-  const allBtn = document.createElement("button");
-  allBtn.innerText = "All";
-  allBtn.classList.toggle("active", currentCategory === "all" || currentCategory.id === null);
-  allBtn.onclick = () => {
-    currentCategory = "all";
-    renderCategories();
-    renderAllProducts();
-  };
-  container.appendChild(allBtn);
-
-  allCategories.forEach(cat => {
-    const btn = document.createElement("button");
-    btn.innerText = cat.category_name;
-    btn.classList.toggle("active", currentCategory.id === cat.category_id);
-
-    btn.onclick = () => {
-      currentCategory = { id: cat.category_id, name: cat.category_name };
-      renderCategories();
-      renderCurrentCategory();
+    // ALL BUTTON
+    const allBtn = document.createElement("button");
+    allBtn.innerText = "All";
+    allBtn.classList.toggle("active", currentCategory === "all" || currentCategory.id === null);
+    allBtn.onclick = () => {
+        currentCategory = { id: "all", name: "all" };
+        renderCategories();
+        renderAllProducts();
     };
+    container.appendChild(allBtn);
 
-    if(editMode && isAdmin){
-      const del = document.createElement("span");
-      del.innerText = " ❌";
-      del.style.color = "red";
-      del.style.marginLeft = "5px";
-      del.onclick = (e) => {
-        e.stopPropagation();
-        deleteCategory(cat.category_id);
-      };
-      btn.appendChild(del);
+    allCategories.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.innerText = cat.category_name;
+        btn.classList.toggle("active", currentCategory.id === cat.category_id);
+        btn.onclick = () => {
+            currentCategory = { id: cat.category_id, name: cat.category_name };
+            renderCategories();
+            renderCurrentCategory();
+        };
+
+        if (editMode && isAdmin) {
+            const del = document.createElement("span");
+            del.innerText = " ❌";
+            del.style.color = "red";
+            del.style.marginLeft = "5px";
+            del.onclick = (e) => {
+                e.stopPropagation();
+                deleteCategory(cat.category_id);
+            };
+            btn.appendChild(del);
+        }
+        container.appendChild(btn);
+    });
+
+    // ADD CATEGORY BUTTON
+    if (editMode && isAdmin) {
+        const addCatBtn = document.createElement("button");
+        addCatBtn.innerText = "+ Add Category";
+        addCatBtn.className = "action";
+        addCatBtn.style.padding = "8px 14px";
+        addCatBtn.style.fontSize = "13px";
+        addCatBtn.onclick = addCategory;
+        container.appendChild(addCatBtn);
     }
 
-    container.appendChild(btn);
-  });
-
-  // ADD CATEGORY BUTTON
-  if(editMode && isAdmin){
-    const addCatBtn = document.createElement("button");
-    addCatBtn.innerText = "+ Add Category";
-    addCatBtn.className = "action";
-    addCatBtn.style.padding = "8px 14px";
-    addCatBtn.style.fontSize = "13px";
-    addCatBtn.onclick = addCategory;
-    container.appendChild(addCatBtn);
-  }
-
-  // SHOW / HIDE ADD PRODUCT BUTTON
-  const addProductBtn = document.getElementById("addProductBtnFixed");
-  addProductBtn.style.display = (editMode && isAdmin && currentCategory !== "all" && currentCategory.id) ? "block" : "none";
+    // SHOW / HIDE ADD PRODUCT BUTTON
+    const addProductBtn = document.getElementById("addProductBtnFixed");
+    addProductBtn.style.display = (editMode && isAdmin && currentCategory !== "all" && currentCategory.id) ? "block" : "none";
 }
 
 /******************************** RENDER CURRENT CATEGORY ********************************/
-function renderCurrentCategory(){
-  const container = document.getElementById("products");
-  container.innerHTML = "";
+function renderCurrentCategory() {
+    const container = document.getElementById("products");
+    container.innerHTML = "";
 
-  if(currentCategory === "all") { 
-    renderAllProducts(); 
-    return; 
-  }
-
-  if(!currentCategory.id || !menu[currentCategory.id]) {
-      container.innerHTML = "<p style='padding:50px; text-align:center; color:#888;'>❌ WALANG PRODUKTO DITO</p>";
-      return;
-  }
-
-  const products = menu[currentCategory.id] || [];
-  
-  // ✅ I-GROUP ANG PRODUKTO AYON SA PANGALAN
-  const grouped = groupProductsByName(products);
-
-  const productGrid = document.createElement("div");
-  productGrid.style.display = "grid";
-  productGrid.style.gridTemplateColumns = "repeat(5, 1fr)";
-  productGrid.style.gap = "15px";
-  productGrid.style.width = "100%";
-
-  // ✅ I-RENDER BAWAT GROUP
-  Object.keys(grouped).forEach(prodName => {
-    const items = grouped[prodName];
-    const mainProduct = items[0];
-
-    const div = document.createElement('div');
-    div.className = "card";
-    div.style.position = "relative";
-
-    // ✅ ITAMA ANG LARAWAN
-    let imagePath = mainProduct.product_image;
-    if(imagePath === null || imagePath === "" || imagePath === undefined || imagePath === "null") {
-        imagePath = 'IMAGES/POS_image/foodpic.jpg';
+    if (currentCategory.id === "all") {
+        renderAllProducts();
+        return;
     }
 
-    // ✅ IPAKITA LAHAT NG VARIANT + PRESYO
-    let variantsHTML = `<div style="margin-top:8px; display:flex; flex-direction:column; gap:4px;">`;
-    items.forEach(p => {
-      let label = "";
-      let price = 0;
+    if (!currentCategory.id || !menu[currentCategory.id]) {
+        container.innerHTML = "<p style='padding:50px; text-align:center; color:#888;'>❌ WALANG PRODUKTO DITO</p>";
+        return;
+    }
 
-      if(p.variants && p.variants.length > 0){
-        p.variants.forEach(v => {
-          variantsHTML += `<button style="background:#1b5e20; color:white; border:none; padding:4px; border-radius:4px; font-size:12px; cursor:pointer;" 
-          onclick="openProductModal(${JSON.stringify(p).replace(/"/g, '&quot;')})">
-            ${v.variant_name} — ₱${parseFloat(v.price).toFixed(2)}
-          </button>`;
+    const products = menu[currentCategory.id] || [];
+    const grouped = groupProductsByName(products);
+    const productGrid = document.createElement("div");
+    productGrid.style.display = "grid";
+    productGrid.style.gridTemplateColumns = "repeat(5, 1fr)";
+    productGrid.style.gap = "15px";
+    productGrid.style.width = "100%";
+
+    Object.keys(grouped).forEach(prodName => {
+        const items = grouped[prodName];
+        const mainProduct = items[0];
+        const div = document.createElement('div');
+        div.className = "card";
+        div.style.position = "relative";
+        div.style.cursor = "pointer"; // ✅ Pwede na i-click ang buong card
+
+        let imagePath = mainProduct.product_image;
+        if (imagePath === null || imagePath === "" || imagePath === undefined || imagePath === "null") {
+            imagePath = 'IMAGES/POS_image/foodpic.jpg';
+        }
+
+        let variantsHTML = `<div style="margin-top:8px; display:flex; flex-direction:column; gap:4px;">`;
+        items.forEach(p => {
+            if (p.variants && p.variants.length > 0) {
+                p.variants.forEach(v => {
+                    variantsHTML += `<div style="background:#1b5e20; color:white; border:none; padding:4px; border-radius:4px; font-size:12px;"> ${v.variant_name} — ₱${parseFloat(v.price).toFixed(2)} </div>`;
+                });
+            } else {
+                variantsHTML += `<div style="background:#1b5e20; color:white; border:none; padding:4px; border-radius:4px; font-size:12px;"> Regular — ₱${parseFloat(p.base_price).toFixed(2)} </div>`;
+            }
         });
-      } else {
-        variantsHTML += `<button style="background:#1b5e20; color:white; border:none; padding:4px; border-radius:4px; font-size:12px; cursor:pointer;" 
-        onclick="openProductModal(${JSON.stringify(p).replace(/"/g, '&quot;')})">
-          Regular — ₱${parseFloat(p.base_price).toFixed(2)}
-        </button>`;
-      }
+        variantsHTML += `</div>`;
+
+        div.innerHTML = `
+            <img src="${imagePath}" style="width:100%; height:120px; object-fit:cover; border-radius:8px 8px 0 0;">
+            <div style="padding:10px; text-align:center;">
+                <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">${prodName}</div>
+                ${variantsHTML}
+            </div>
+        `;
+
+        // ✅ ITO ANG NAGPAPAGANA NG CLICK SA BUONG CARD
+        div.onclick = () => {
+    if (editMode && isAdmin) {
+        openEditProductModal(mainProduct);
+    } else {
+        openProductModal(mainProduct);
+    }
+};
+
+        productGrid.appendChild(div);
     });
-    variantsHTML += `</div>`;
-
-    div.innerHTML = `
-      <img src="${imagePath}" style="width:100%; height:120px; object-fit:cover; border-radius:8px 8px 0 0;">
-      <div style="padding:10px; text-align:center;">
-        <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">${prodName}</div>
-        ${variantsHTML}
-      </div>
-    `;
-
-    productGrid.appendChild(div);
-  });
-
-  container.appendChild(productGrid);
+    container.appendChild(productGrid);
 }
 
 /******************************** RENDER ALL PRODUCTS ********************************/
-function renderAllProducts(){
-  let allProducts = [];
-  Object.values(menu).forEach(list => allProducts = allProducts.concat(list));
+function renderAllProducts() {
+    const container = document.getElementById("products");
+    container.innerHTML = "";
 
-  // ✅ I-GROUP AYON SA PANGALAN
-  const grouped = groupProductsByName(allProducts);
+    // ✅ IMPORTANT: alisin ang grid ng main container
+    container.style.display = "flex";
+    container.style.flexDirection = "column";
+    container.style.gap = "30px";
 
-  const container = document.getElementById("products");
-  container.innerHTML = "";
+    Object.keys(menu).forEach(categoryId => {
 
-  const productGrid = document.createElement("div");
-  productGrid.style.display = "grid";
-  productGrid.style.gridTemplateColumns = "repeat(5, 1fr)";
-  productGrid.style.gap = "15px";
-  productGrid.style.width = "100%";
+        const products = menu[categoryId];
+        if (!products || products.length === 0) return;
 
-  Object.keys(grouped).forEach(prodName => {
-    const items = grouped[prodName];
-    const mainProduct = items[0];
+        // ✅ HANAPIN ANG CATEGORY NAME
+        const categoryData = allCategories.find(
+            c => c.category_id == categoryId
+        );
 
-    const div = document.createElement('div');
-    div.className = "card";
-    div.style.position = "relative";
+        const categoryName = categoryData
+            ? categoryData.category_name
+            : "Unknown Category";
 
-    let imagePath = mainProduct.product_image;
-    if(imagePath === null || imagePath === "" || imagePath === undefined || imagePath === "null") {
-        imagePath = 'IMAGES/POS_image/foodpic.jpg';
+        // =========================
+        // CATEGORY BLOCK
+        // =========================
+        const categoryBlock = document.createElement("div");
+        categoryBlock.style.width = "100%";
+
+        // =========================
+        // TITLE
+        // =========================
+        const title = document.createElement("h3");
+
+        title.textContent = categoryName;
+
+        title.style.fontSize = "20px";
+        title.style.fontWeight = "700";
+        title.style.color = "#114500";
+        title.style.marginBottom = "15px";
+        title.style.paddingBottom = "10px";
+        title.style.borderBottom = "2px solid #e5e7eb";
+
+        categoryBlock.appendChild(title);
+
+        // =========================
+        // PRODUCT GRID
+        // =========================
+        const productGrid = document.createElement("div");
+
+        productGrid.style.display = "grid";
+        productGrid.style.gridTemplateColumns = "repeat(5, 1fr)";
+        productGrid.style.gap = "15px";
+        productGrid.style.width = "100%";
+
+        const grouped = groupProductsByName(products);
+
+        Object.keys(grouped).forEach(prodName => {
+
+            const items = grouped[prodName];
+            const main = items[0];
+
+            const card = document.createElement("div");
+            card.className = "card";
+
+            let img = main.product_image;
+
+            if (!img || img === "" || img === "null") {
+                img = "IMAGES/POS_image/foodpic.jpg";
+            }
+
+            let variantsHTML = `
+                <div style="
+                    margin-top:8px;
+                    display:flex;
+                    flex-direction:column;
+                    gap:4px;
+                ">
+            `;
+
+            items.forEach(p => {
+
+                if (p.variants && p.variants.length > 0) {
+
+                    p.variants.forEach(v => {
+
+                        variantsHTML += `
+                            <div style="
+                                background:#1b5e20;
+                                color:white;
+                                padding:4px;
+                                border-radius:4px;
+                                font-size:12px;
+                            ">
+                                ${v.variant_name} — ₱${parseFloat(v.price).toFixed(2)}
+                            </div>
+                        `;
+                    });
+
+                } else {
+
+                    variantsHTML += `
+                        <div style="
+                            background:#1b5e20;
+                            color:white;
+                            padding:4px;
+                            border-radius:4px;
+                            font-size:12px;
+                        ">
+                            Regular — ₱${parseFloat(p.base_price).toFixed(2)}
+                        </div>
+                    `;
+                }
+            });
+
+            variantsHTML += `</div>`;
+
+            card.innerHTML = `
+                <img src="${img}"
+                     style="
+                        width:100%;
+                        height:120px;
+                        object-fit:cover;
+                        border-radius:8px 8px 0 0;
+                     ">
+
+                <div style="padding:10px; text-align:center;">
+
+                    <div style="
+                        font-weight:bold;
+                        font-size:14px;
+                        margin-bottom:5px;
+                    ">
+                        ${prodName}
+                    </div>
+
+                    ${variantsHTML}
+
+                </div>
+            `;
+
+            card.onclick = () => {
+    if (editMode && isAdmin) {
+        openEditProductModal(main);
+    } else {
+        openProductModal(main);
+    }
+};
+
+            productGrid.appendChild(card);
+        });
+
+        categoryBlock.appendChild(productGrid);
+
+        container.appendChild(categoryBlock);
+    });
+}
+
+/******************************** HELPER: GROUP PRODUCTS BY NAME ********************************/
+function groupProductsByName(productsArray) {
+    return productsArray.reduce((groups, product) => {
+        let name = product.product_name.trim();
+        if (!groups[name]) groups[name] = [];
+        groups[name].push(product);
+        return groups;
+    }, {});
+}
+
+/******************************** DELETE FUNCTIONS ********************************/
+function deleteCategory(catId) {
+    if (!confirm('Delete this category?')) return;
+    delete menu[catId];
+    allCategories = allCategories.filter(c => c.category_id !== catId);
+
+    const keys = Object.keys(menu);
+    if (keys.length === 0) {
+        currentCategory = { id: null, name: null };
+        document.getElementById("products").innerHTML = "<p>No categories available</p>";
+        renderCategories();
+        return;
     }
 
-    let variantsHTML = `<div style="margin-top:8px; display:flex; flex-direction:column; gap:4px;">`;
-    items.forEach(p => {
-      if(p.variants && p.variants.length > 0){
-        p.variants.forEach(v => {
-          variantsHTML += `<button style="background:#1b5e20; color:white; border:none; padding:4px; border-radius:4px; font-size:12px; cursor:pointer;" 
-          onclick="openProductModal(${JSON.stringify(p).replace(/"/g, '&quot;')})">
-            ${v.variant_name} — ₱${parseFloat(v.price).toFixed(2)}
-          </button>`;
-        });
-      } else {
-        variantsHTML += `<button style="background:#1b5e20; color:white; border:none; padding:4px; border-radius:4px; font-size:12px; cursor:pointer;" 
-        onclick="openProductModal(${JSON.stringify(p).replace(/"/g, '&quot;')})">
-          Regular — ₱${parseFloat(p.base_price).toFixed(2)}
-        </button>`;
-      }
-    });
-    variantsHTML += `</div>`;
-
-    div.innerHTML = `
-      <img src="${imagePath}" style="width:100%; height:120px; object-fit:cover; border-radius:8px 8px 0 0;">
-      <div style="padding:10px; text-align:center;">
-        <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">${prodName}</div>
-        ${variantsHTML}
-      </div>
-    `;
-
-    productGrid.appendChild(div);
-  });
-
-  container.appendChild(productGrid);
-}
-/******************************** HELPER: GROUP PRODUCTS BY NAME ********************************/
-function groupProductsByName(productsArray){
-  return productsArray.reduce((groups, product) => {
-    let name = product.product_name.trim();
-    if(!groups[name]) groups[name] = [];
-    groups[name].push(product);
-    return groups;
-  }, {});
-}
-/******************************** DELETE FUNCTIONS ********************************/
-function deleteCategory(catId){
-  if(!confirm(`Delete this category?`)) return;
-  delete menu[catId];
-  allCategories = allCategories.filter(c => c.category_id !== catId);
-  const keys = Object.keys(menu);
-  if(keys.length === 0){
-    currentCategory = { id: null, name: null };
-    document.getElementById("products").innerHTML = "<p>No categories available</p>";
+    if (catId === currentCategory.id) {
+        const firstCat = allCategories[0];
+        currentCategory = { id: firstCat.category_id, name: firstCat.category_name };
+    }
     renderCategories();
-    return;
-  }
-  if(catId === currentCategory.id){
-    const firstCat = allCategories[0];
-    currentCategory = { id: firstCat.category_id, name: firstCat.category_name };
-  }
-  renderCategories();
-  renderCurrentCategory();
+    renderCurrentCategory();
 }
 
-function deleteProduct(catId, productName){
-  if(!confirm(`Delete "${productName}"?`)) return;
-  menu[catId] = menu[catId].filter(item => item.product_name !== productName);
-  renderCurrentCategory();
+function deleteProduct(catId, productId, productName) {
+    if (!confirm(`Delete "${productName}"?`)) return;
+    menu[catId] = menu[catId].filter(item => item.product_name !== productName);
+    renderCurrentCategory();
+
+    fetch(API_URL + '?action=deleteProduct', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `id=${productId}`
+    });
 }
 
 /******************************** ADD CATEGORY ********************************/
-function addCategory(){
-  document.getElementById("addCategoryModal").style.display = "flex";
-  document.getElementById("newCategoryName").value = "";
-  document.getElementById("newCategoryName").focus();
+function addCategory() {
+    document.getElementById("addCategoryModal").style.display = "flex";
+    document.getElementById("newCategoryName").value = "";
+    document.getElementById("newCategoryName").focus();
 }
 
-async function submitAddCategory(){
-  const name = document.getElementById("newCategoryName").value.trim();
-  if(!name){ alert("Please enter category name!"); return; }
-
-  try {
-    const response = await fetch(API_URL + '?action=addCategory', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `category_name=${encodeURIComponent(name)}`
-    });
-    const result = await response.json();
-    if(result.status === 'success'){
-      allCategories.push(result.data);
-      menu[result.data.category_id] = [];
-      currentCategory = { id: result.data.category_id, name: result.data.category_name };
-      closeAddCategoryModal();
-      renderCategories();
-      renderCurrentCategory();
-      alert("Category saved successfully!");
-    } else { alert("Error: " + result.message); }
-  } catch (error) { console.error(error); alert("Failed to connect to server."); }
+async function submitAddCategory() {
+    const name = document.getElementById("newCategoryName").value.trim();
+    if (!name) {
+        alert("Please enter category name!");
+        return;
+    }
+    try {
+        const response = await fetch(API_URL + '?action=addCategory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `category_name=${encodeURIComponent(name)}`
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            allCategories.push(result.data);
+            menu[result.data.category_id] = [];
+            currentCategory = { id: result.data.category_id, name: result.data.category_name };
+            closeAddCategoryModal();
+            renderCategories();
+            renderCurrentCategory();
+            alert("Category saved successfully!");
+        } else {
+            alert("Error: " + result.message);
+        }
+    } catch (error) {
+        console.error(error);
+        alert("Failed to connect to server.");
+    }
 }
 
-function closeAddCategoryModal(){
-  document.getElementById("addCategoryModal").style.display = "none";
+function closeAddCategoryModal() {
+    document.getElementById("addCategoryModal").style.display = "none";
 }
-document.getElementById("addCategoryModal").addEventListener('click', e => { if(e.target === this) closeAddCategoryModal(); });
+
+document.getElementById("addCategoryModal").addEventListener('click', e => {
+    if (e.target === this) closeAddCategoryModal();
+});
 
 /******************************** PRODUCT MODAL ********************************/
 let selectedProduct = null;
 let selectedQty = 1;
 
-function openProductModal(item){
-  selectedProduct = item;
-  selectedQty = 1;
+function openProductModal(item) {
+    selectedProduct = item;
+    selectedQty = 1;
+    document.getElementById("modalProductName").innerText = item.product_name;
 
-  // ✅ ILAGAY ANG PANGALAN NG PRODUKTO
-  document.getElementById("modalProductName").innerText = item.product_name;
+    let imagePath = item.product_image;
+    if (!imagePath || imagePath === "null" || imagePath === "") {
+        imagePath = 'IMAGES/POS_image/foodpic.jpg';
+    }
+    document.getElementById("modalProductImage").src = imagePath;
 
-  // ✅ PINAKA-IMPORTANTE: ITAMA ANG LARAWAN
-  let imagePath = p.product_image;
-if (!imagePath || imagePath === "null" || imagePath === "") {
-    imagePath = 'IMAGES/POS_image/foodpic.jpg';
-}
-  document.getElementById("modalProductImage").src = imagePath;
-  
-  let priceDisplay = "";
-  const oldSel = document.getElementById("variantSelector");
-  if(oldSel) oldSel.remove();
+    let priceDisplay = "";
+    const oldSel = document.getElementById("variantSelector");
+    if (oldSel) oldSel.remove();
 
-  // ✅ KUNG MAY VARIANTS (SOLO / DOUBLE)
-  if(item.variants && item.variants.length > 0){
-    priceDisplay = "Select size/variant:";
-    const sel = document.createElement("select");
-    sel.id = "variantSelector";
-    sel.style.width = "100%";
-    sel.style.padding = "8px";
-    sel.style.margin = "8px 0";
-    sel.style.borderRadius = "6px";
-    document.querySelector("#productModal .modal-content").insertBefore(sel, document.querySelector(".qty-box"));
+    if (item.variants && item.variants.length > 0) {
+        priceDisplay = "Select size/variant:";
+        const sel = document.createElement("select");
+        sel.id = "variantSelector";
+        sel.style.width = "100%";
+        sel.style.padding = "8px";
+        sel.style.margin = "8px 0";
+        sel.style.borderRadius = "6px";
+        document.querySelector("#productModal .modal-content").insertBefore(sel, document.querySelector(".qty-box"));
 
-    item.variants.forEach(v => {
-      const opt = document.createElement("option");
-      opt.value = v.price;
-      opt.text = `${v.variant_name} - ₱${parseFloat(v.price).toFixed(2)}`;
-      sel.appendChild(opt);
-    });
-  } 
-  // ✅ KUNG WALANG VARIANT — GAMITIN ANG BASE_PRICE
-  else {
-    let presyo = parseFloat(item.base_price || 0);
-    priceDisplay = "₱" + presyo.toFixed(2);
-  }
+        item.variants.forEach(v => {
+            const opt = document.createElement("option");
+            opt.value = v.price;
+            opt.text = `${v.variant_name} - ₱${parseFloat(v.price).toFixed(2)}`;
+            sel.appendChild(opt);
+        });
+    } else {
+        let presyo = parseFloat(item.base_price || 0);
+        priceDisplay = "₱" + presyo.toFixed(2);
+    }
 
-  document.getElementById("modalProductPrice").innerText = priceDisplay;
-  document.getElementById("qtyInput").value = selectedQty;
-  document.getElementById("productModal").style.display = "flex";
+    document.getElementById("modalProductPrice").innerText = priceDisplay;
+    document.getElementById("qtyInput").value = selectedQty;
+    document.getElementById("productModal").style.display = "flex";
 }
 
-function addToCartFromModal(){
-  let finalPrice = parseFloat(selectedProduct.base_price);
-  let productName = selectedProduct.product_name;
+function addToCartFromModal() {
+    let finalPrice = parseFloat(selectedProduct.base_price);
+    let productName = selectedProduct.product_name;
 
-  if(selectedProduct.variants && selectedProduct.variants.length > 0){
-    const sel = document.getElementById("variantSelector");
-    finalPrice = parseFloat(sel.value);
-    productName = `${selectedProduct.product_name} [${sel.options[sel.selectedIndex].text.split(' - ')[0]}]`;
-  }
+    if (selectedProduct.variants && selectedProduct.variants.length > 0) {
+        const sel = document.getElementById("variantSelector");
+        finalPrice = parseFloat(sel.value);
+        productName = `${selectedProduct.product_name} [${sel.options[sel.selectedIndex].text.split(' - ')[0]}]`;
+    }
 
-  let existing = cart.find(i => i.name === productName);
-  if(existing){ 
-    existing.qty += selectedQty; 
-  } else { 
-    cart.push({ 
-      name: productName, 
-      price: finalPrice, 
-      qty: selectedQty 
-    }); 
-  }
-
-  renderCart();
-  closeProductModal();
-}
-
-function closeProductModal(){
-  document.getElementById("productModal").style.display = "none";
-  const oldSel = document.getElementById("variantSelector");
-  if(oldSel) oldSel.remove();
-}
-
-document.getElementById("productModal").addEventListener("click", function(e){
-  if(e.target === this){
+    let existing = cart.find(i => i.name === productName);
+    if (existing) {
+        existing.qty += selectedQty;
+    } else {
+        cart.push({ name: productName, price: finalPrice, qty: selectedQty });
+    }
+    renderCart();
     closeProductModal();
-  }
+}
+
+function closeProductModal() {
+    document.getElementById("productModal").style.display = "none";
+    const oldSel = document.getElementById("variantSelector");
+    if (oldSel) oldSel.remove();
+}
+
+document.getElementById("productModal").addEventListener("click", function (e) {
+    if (e.target === this) {
+        closeProductModal();
+    }
 });
 
 /******************************** CHANGE QUANTITY ( - / + ) ********************************/
-function changeQty(val){
-  selectedQty = Math.max(1, selectedQty + val);
-  document.getElementById("qtyInput").value = selectedQty;
+function changeQty(val) {
+    selectedQty = Math.max(1, selectedQty + val);
+    document.getElementById("qtyInput").value = selectedQty;
 }
 
 /******************************** CHANGE QUANTITY ( manual ) ********************************/
-function manualQtyInput(){
-  let input = document.getElementById("qtyInput").value;
-  input = input.replace(/[^0-9]/g, "");
-  document.getElementById("qtyInput").value = input;
-  if(input !== "" && parseInt(input) >= 1){
-    selectedQty = parseInt(input);
-  }
+function manualQtyInput() {
+    let input = document.getElementById("qtyInput").value;
+    input = input.replace(/[^0-9]/g, "");
+    document.getElementById("qtyInput").value = input;
+    if (input !== "" && parseInt(input) >= 1) {
+        selectedQty = parseInt(input);
+    }
 }
 
 /******************************** QUANTITY INPUT ( manual ) ********************************/
-function fixQtyInput(){
-  const inputField = document.getElementById("qtyInput");
-  if(inputField.value === "" || parseInt(inputField.value) < 1){
-    inputField.value = 1;
-    selectedQty = 1;
-  }
+function fixQtyInput() {
+    const inputField = document.getElementById("qtyInput");
+    if (inputField.value === "" || parseInt(inputField.value) < 1) {
+        inputField.value = 1;
+        selectedQty = 1;
+    }
 }
 
-function selectVariant(productName, variantName, price){
-  cart.push({ 
-    name: `${productName} [${variantName}]`, 
-    price: price, 
-    qty: 1 
-  });
-  renderCart();
+function selectVariant(productName, variantName, price) {
+    cart.push({
+        name: `${productName} [${variantName}]`,
+        price: price,
+        qty: 1
+    });
+    renderCart();
 }
 
 /******************************** ORDER CART FUNCTIONS ********************************/
-function renderCart(){
-  const container = document.getElementById("orderItems");
-  container.innerHTML = "";
-  const empty = document.getElementById("emptyCart");
+function renderCart() {
+    const container = document.getElementById("orderItems");
+    container.innerHTML = "";
+    const empty = document.getElementById("emptyCart");
+    
+    if (cart.length === 0) {
+        empty.style.display = "block";
+        document.getElementById("total").innerText = "₱0.00";
+        return;
+    } else {
+        empty.style.display = "none";
+    }
 
-  if(cart.length === 0){
-    empty.style.display = "block";
-    document.getElementById("total").innerText = "₱0.00";
-    return;
-  } else {
-    empty.style.display = "none";
-  }
-
-  let total = 0;
-  cart.forEach((item, index) => {
-    total += item.price * item.qty;
-
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `
-      <div class="order-item">
-        <div class="item-left">
-          <span class="item-name">${item.name}</span>
-          <span class="order-price">₱${(item.price * item.qty).toFixed(2)}</span>
-        </div>
-        <div class="item-right">
-          <div class="qty-controls">
-            <button onclick="decreaseQty(${index})" class="qty-btn qty-minus">−</button>
-            <span class="qty-value">${item.qty}</span>
-            <button onclick="increaseQty(${index})" class="qty-btn qty-plus">+</button>
-          </div>
-          <button onclick="removeItem(${index})" class="remove-btn">✕</button>
-        </div>
-      </div>
-    `;
-    container.appendChild(div);
-  });
-
-  document.getElementById("total").innerText = "₱" + total.toFixed(2);
+    let total = 0;
+    cart.forEach((item, index) => {
+        total += parseFloat(item.price) * parseInt(item.qty);
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+            <div class="order-item">
+                <div class="item-left">
+                    <span class="item-name">${item.name}</span>
+                    <span class="order-price">₱${(item.price * item.qty).toFixed(2)}</span>
+                </div>
+                <div class="item-right">
+                    <div class="qty-controls">
+                        <button onclick="decreaseQty(${index})" class="qty-btn qty-minus">−</button>
+                        <span class="qty-value">${item.qty}</span>
+                        <button onclick="increaseQty(${index})" class="qty-btn qty-plus">+</button>
+                    </div>
+                    <button onclick="removeItem(${index})" class="remove-btn">✕</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+    document.getElementById("total").innerText = "₱" + total.toFixed(2);
 }
 
-function increaseQty(index){
-  cart[index].qty += 1;
-  renderCart();
+function increaseQty(index) {
+    cart[index].qty += 1;
+    renderCart();
 }
 
-function decreaseQty(index){
-  cart[index].qty -= 1;
-  if(cart[index].qty <= 0){
+function decreaseQty(index) {
+    cart[index].qty -= 1;
+    if (cart[index].qty <= 0) {
+        cart.splice(index, 1);
+    }
+    renderCart();
+}
+
+function removeItem(index) {
     cart.splice(index, 1);
-  }
-  renderCart();
-}
-
-function removeItem(index){
-  cart.splice(index, 1);
-  renderCart();
+    renderCart();
 }
 
 /******************************** ADD PRODUCT MODAL & FUNCTIONS ********************************/
 let selectedProductImage = "IMAGES/POS_image/foodpic.jpg";
 
-function addProduct(){
-  if(!currentCategory.id || currentCategory === "all"){
-    alert("⚠️ Please select a specific category first before adding product!");
-    return;
-  }
-  document.getElementById("newProductName").value = "";
-  document.getElementById("newProductPrice").value = "";
-  document.getElementById("newProductPrice").disabled = false;
-  document.getElementById("newProductPrice").style.background = "#fff";
-  document.getElementById("newProductPrice").style.color = "#000";
-  document.getElementById("basePriceNote").style.display = "none";
-  selectedProductImage = "IMAGES/POS_image/foodpic.jpg";
-  document.getElementById("productImagePreview").src = selectedProductImage;
-  document.getElementById("variantsContainer").innerHTML = '<p style="color:#888; font-size:12px;">Optional: Add sizes or variants with different prices</p>';
-  document.getElementById("addProductModal").style.display = "flex";
+function addProduct() {
+    if (!currentCategory.id || currentCategory.id === "all") {
+        alert("⚠️ Please select a specific category first before adding product!");
+        return;
+    }
+    document.getElementById("newProductName").value = "";
+    document.getElementById("newProductPrice").value = "";
+    document.getElementById("newProductPrice").disabled = false;
+    document.getElementById("newProductPrice").style.background = "#fff";
+    document.getElementById("newProductPrice").style.color = "#000";
+    document.getElementById("basePriceNote").style.display = "none";
+    selectedProductImage = "IMAGES/POS_image/foodpic.jpg";
+    document.getElementById("productImagePreview").src = selectedProductImage;
+    document.getElementById("productImagePath").value = "";
+    document.getElementById("productImageInput").value = "";
+    document.getElementById("variantsContainer").innerHTML = '<p style="color:#888; font-size:12px;">Optional: Add sizes or variants with different prices</p>';
+    document.getElementById("addProductModal").style.display = "flex";
 }
 
 function previewImage(event) {
-  const reader = new FileReader();
-  reader.onload = function() {
-    const output = document.getElementById('productImagePreview');
-    output.src = reader.result;
-    document.getElementById('productImagePath').value = 'custom'; // tanda na may upload
-  };
-  reader.readAsDataURL(event.target.files[0]);
+    const reader = new FileReader();
+    reader.onload = function() {
+        const output = document.getElementById('productImagePreview');
+        output.src = reader.result;
+        document.getElementById('productImagePath').value = 'custom';
+    };
+    reader.readAsDataURL(event.target.files[0]);
 }
 
 function useDefaultImage() {
-  document.getElementById('productImagePreview').src = 'IMAGES/POS_image/foodpic.jpg';
-  document.getElementById('productImagePath').value = 'IMAGES/POS_image/foodpic.jpg';
-  document.getElementById('productImageInput').value = "";
+    document.getElementById('productImagePreview').src = 'IMAGES/POS_image/foodpic.jpg';
+    document.getElementById('productImagePath').value = 'IMAGES/POS_image/foodpic.jpg';
+    document.getElementById('productImageInput').value = "";
 }
 
-function addVariantRow(){
-  const container = document.getElementById("variantsContainer");
-  if(container.querySelector("p")) container.innerHTML = "";
-
-  const row = document.createElement("div");
-  row.className = "variant-row";
-  row.innerHTML = `
-    <input type="text" placeholder="Size / Variant Name e.g. Small, Large" class="variant-name">
-    <input type="number" step="0.01" min="0" placeholder="Price ₱" class="variant-price">
-    <button type="button" class="action btn-sm cancel-btn" onclick="removeVariantRow(this)">✕</button>
-  `;
-  container.appendChild(row);
-
-  toggleBasePriceState();
+function addVariantRow() {
+    const container = document.getElementById("variantsContainer");
+    if (container.querySelector("p")) container.innerHTML = "";
+    const row = document.createElement("div");
+    row.className = "variant-row";
+    row.innerHTML = `
+        <input type="text" placeholder="Size / Variant Name e.g. Small, Large" class="variant-name">
+        <input type="number" step="0.01" min="0" placeholder="Price ₱" class="variant-price">
+        <button type="button" class="action btn-sm cancel-btn" onclick="removeVariantRow(this)">✕</button>
+    `;
+    container.appendChild(row);
+    toggleBasePriceState();
 }
 
-function removeVariantRow(btn){
-  btn.parentElement.remove();
-  toggleBasePriceState();
+function removeVariantRow(btn) {
+    btn.parentElement.remove();
+    toggleBasePriceState();
 }
 
-function toggleBasePriceState(){
-  const variantRows = document.querySelectorAll(".variant-row");
-  const basePriceInput = document.getElementById("newProductPrice");
-  const note = document.getElementById("basePriceNote");
-
-  if(variantRows.length > 0){
-    basePriceInput.disabled = true;
-    basePriceInput.style.background = "#f1f1f1";
-    basePriceInput.style.color = "#888";
-    basePriceInput.value = ""; 
-    note.style.display = "block";
-  } else {
-    basePriceInput.disabled = false;
-    basePriceInput.style.background = "#fff";
-    basePriceInput.style.color = "#000";
-    note.style.display = "none";
-  }
+function toggleBasePriceState() {
+    const variantRows = document.querySelectorAll(".variant-row");
+    const basePriceInput = document.getElementById("newProductPrice");
+    const note = document.getElementById("basePriceNote");
+    if (variantRows.length > 0) {
+        basePriceInput.disabled = true;
+        basePriceInput.style.background = "#f1f1f1";
+        basePriceInput.style.color = "#888";
+        basePriceInput.value = "";
+        note.style.display = "block";
+    } else {
+        basePriceInput.disabled = false;
+        basePriceInput.style.background = "#fff";
+        basePriceInput.style.color = "#000";
+        note.style.display = "none";
+    }
 }
 
 async function submitAddProduct() {
-  const name = document.getElementById('newProductName').value.trim();
-  const catId = currentCategory.id;
-  const basePrice = document.getElementById('newProductPrice').value || '0.00';
-  
-  // ✅ DEFAULT IMAGE AGAD
-  let finalImage = 'IMAGES/POS_image/foodpic.jpg';
-  const fileInput = document.getElementById('productImageInput');
 
-  // ✅ KUNG MAY PINILING FILE → PALITAN ANG PATH
-  if (fileInput.files.length > 0) {
-    const formData = new FormData();
-    formData.append('image', fileInput.files[0]);
-    const uploadRes = await fetch('api.php?action=uploadImage', { method: 'POST', body: formData });
-    const uploadData = await uploadRes.json();
-    if (uploadData.status === 'success') {
-      finalImage = uploadData.path; // ← GAGAMITIN ANG BAGONG LITRATO
+    const name = document.getElementById('newProductName').value.trim();
+    const catId = currentCategory.id;
+    const basePrice = document.getElementById('newProductPrice').value || '0.00';
+
+    let finalImage = document.getElementById('productImagePath').value;
+
+    const fileInput = document.getElementById('productImageInput');
+
+    // upload new image if selected
+    if (fileInput.files.length > 0) {
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+
+        try {
+            const uploadRes = await fetch(API_URL + '?action=uploadImage', {
+                method: 'POST',
+                body: formData
+            });
+
+            const uploadData = await uploadRes.json();
+
+            if (uploadData.status === 'success') {
+                finalImage = uploadData.path;
+            }
+        } catch (err) {
+            console.error(err);
+        }
     }
-  } 
-  // ✅ KUNG WALA / DEFAULT LANG → IWAN SA DEFAULT (papasok na NULL sa DB dahil sa API)
 
-  // ✅ KUNIN ANG VARIANTS
-  const variants = [];
-  document.querySelectorAll('.variant-row').forEach(row => {
-    const vName = row.querySelector('.variant-name').value.trim();
-    const vPrice = row.querySelector('.variant-price').value.trim();
-    if ( vName && vPrice ) variants.push({ name: vName, price: vPrice });
-  });
+    // variants
+    const variants = [];
+    document.querySelectorAll('.variant-row').forEach(row => {
+        const vName = row.querySelector('.variant-name').value.trim();
+        const vPrice = row.querySelector('.variant-price').value.trim();
 
-  // ✅ IPASA LAHAT SA API
-  const res = await fetch('api.php?action=addProduct', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      category_id: catId,
-      product_name: name,
-      price: basePrice,
-      product_image: finalImage, // ← IPAPASA: DEFAULT O CUSTOM
-      variants: JSON.stringify(variants)
-    })
-  });
-
-  const data = await res.json();
-  alert(data.message);
-  if (data.status === 'success') {
-    closeAddProductModal();
-    loadMenuFromDatabase(); // ← BINALI KO PARA MABASA ULIT AGAD
-  }
-}
-
-async function saveProductToDB(category_id, name, price, image = "IMAGES/POS_image/foodpic.jpg", variants = "[]", has_variant = 0){
-  if (image === "IMAGES/POS_image/foodpic.jpg" || image.startsWith('data:image')) {
-    image = null;
-  }
-
-  try {
-    const response = await fetch(API_URL + '?action=addProduct', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: `category_id=${category_id}&product_name=${encodeURIComponent(name)}&price=${price}&product_image=${encodeURIComponent(image)}&variants=${encodeURIComponent(variants)}&has_variant=${has_variant}`
+        if (vName && vPrice) {
+            variants.push({
+                variant_name: vName,
+                price: vPrice
+            });
+        }
     });
-    const res = await response.json();
-    if(res.status === 'success'){
-      console.log("✅ Product saved");
-    } else {
-      alert("❌ Error: " + res.message);
+
+    // 🔥 EDIT MODE
+    if (isEditing && editingProduct) {
+
+        try {
+            const res = await fetch(API_URL + '?action=updateProductFull', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    product_id: editingProduct.product_id,
+                    product_name: name,
+                    price: basePrice,
+                    product_image: finalImage,
+                    variants: JSON.stringify(variants)
+                })
+            });
+
+            const data = await res.json();
+
+            alert(data.message || "Updated!");
+
+            if (data.status === 'success') {
+                closeAddProductModal();
+                await loadMenuFromDatabase();
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert("Update failed");
+        }
+
+        isEditing = false;
+        editingProduct = null;
+        return;
     }
-  } catch (err) {
-    console.error("⚠️ Error", err);
-  }
+
+    // 🔥 NORMAL ADD MODE (existing code)
+    try {
+        const res = await fetch(API_URL + '?action=addProduct', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                category_id: catId,
+                product_name: name,
+                price: basePrice,
+                product_image: finalImage,
+                variants: JSON.stringify(variants)
+            })
+        });
+
+        const data = await res.json();
+        alert(data.message);
+
+        if (data.status === 'success') {
+            closeAddProductModal();
+            await loadMenuFromDatabase();
+        }
+
+    } catch (err) {
+        console.error(err);
+        alert("Failed to add product");
+    }
 }
 
-function closeAddProductModal(){
-  document.getElementById("addProductModal").style.display = "none";
+async function saveProductToDB(category_id, name, price, image = "IMAGES/POS_image/foodpic.jpg", variants = "[]", has_variant = 0) {
+    if (image === "IMAGES/POS_image/foodpic.jpg" || image.startsWith('data:image')) {
+        image = null;
+    }
+    try {
+        const response = await fetch(API_URL + '?action=addProduct', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `category_id=${category_id}&product_name=${encodeURIComponent(name)}&price=${price}&product_image=${encodeURIComponent(image)}&variants=${encodeURIComponent(variants)}&has_variant=${has_variant}`
+        });
+        const res = await response.json();
+        if (res.status === 'success') {
+            console.log("✅ Product saved");
+        } else {
+            alert("❌ Error: " + res.message);
+        }
+    } catch (err) {
+        console.error("⚠️ Error", err);
+    }
 }
+
+function closeAddProductModal() {
+    document.getElementById("addProductModal").style.display = "none";
+}
+
 document.getElementById("addProductModal").addEventListener("click", e => {
-  if(e.target === this) closeAddProductModal();
+    if (e.target === this) closeAddProductModal();
 });
+
+let editingProduct = null;
+let isEditing = false;
+
+function openEditProductModal(product) {
+    editingProduct = product;
+    isEditing = true;
+
+    // open same modal
+    document.getElementById("addProductModal").style.display = "flex";
+
+    // fill name
+    document.getElementById("newProductName").value = product.product_name;
+
+    // fill price
+    document.getElementById("newProductPrice").value = product.base_price || 0;
+
+    // image
+    let img = product.product_image;
+    if (!img) img = "IMAGES/POS_image/foodpic.jpg";
+
+    document.getElementById("productImagePreview").src = img;
+    document.getElementById("productImagePath").value = img;
+    selectedProductImage = img;
+
+    // reset variants first
+    const container = document.getElementById("variantsContainer");
+    container.innerHTML = "";
+
+    // load variants if existing
+    if (product.variants && product.variants.length > 0) {
+        product.variants.forEach(v => {
+            const row = document.createElement("div");
+            row.className = "variant-row";
+            row.innerHTML = `
+                <input type="text" class="variant-name" value="${v.variant_name}">
+                <input type="number" class="variant-price" value="${v.price}">
+                <button type="button" class="action btn-sm cancel-btn" onclick="removeVariantRow(this)">✕</button>
+            `;
+            container.appendChild(row);
+        });
+    } else {
+        container.innerHTML = '<p style="color:#888; font-size:12px;">No variants</p>';
+    }
+
+    toggleBasePriceState();
+}
+
+function closeEditProductModal() {
+    document.getElementById("editProductModal").style.display = "none";
+    editingProduct = null;
+}
+
 
 /******************************** PAYMENT MODAL & LOGIC ********************************/
 const modal = document.getElementById("paymentModal");
-
 document.getElementById("placeOrderBtn").addEventListener("click", () => {
-  if(cart.length === 0){
-    alert("No items in cart!");
-    return;
-  }
-  openModal();
+    if (cart.length === 0) {
+        alert("No items in cart!");
+        return;
+    }
+    openModal();
 });
 
-function openModal(){
-  modal.style.display = "flex";
-  const container = document.getElementById("modalOrderItems");
-  container.innerHTML = "";
-  let subtotal = 0;
-
-  cart.forEach(item => {
-    subtotal += item.price * item.qty;
-    container.innerHTML += `
-      <div style="display:flex; justify-content:space-between;">
-        <span>${item.name} (x${item.qty})</span>
-        <span>₱${(item.price * item.qty).toFixed(2)}</span>
-      </div>
-    `;
-  });
-
-  document.getElementById("subtotalText").innerText = "Subtotal: ₱" + subtotal.toFixed(2);
-  document.getElementById("totalText").innerText = "Total: ₱" + subtotal.toFixed(2);
-  updateTotals();
+function openModal() {
+    modal.style.display = "flex";
+    const container = document.getElementById("modalOrderItems");
+    container.innerHTML = "";
+    let subtotal = 0;
+    cart.forEach(item => {
+        subtotal += item.price * item.qty;
+        container.innerHTML += `
+            <div style="display:flex; justify-content:space-between;">
+                <span>${item.name} (x${item.qty})</span>
+                <span>₱${(item.price * item.qty).toFixed(2)}</span>
+            </div>
+        `;
+    });
+    document.getElementById("subtotalText").innerText = "Subtotal: ₱" + subtotal.toFixed(2);
+    document.getElementById("totalText").innerText = "Total: ₱" + subtotal.toFixed(2);
+    updateTotals();
 }
 
-function closeModal(){
-  modal.style.display = "none";
+function closeModal() {
+    modal.style.display = "none";
 }
 
 document.getElementById("discountType").addEventListener("change", updateTotals);
 document.getElementById("customDiscount").addEventListener("input", updateTotals);
 
-function updateTotals(){
-  let subtotal = 0;
-  cart.forEach(item => subtotal += item.price * item.qty);
-  let discount = parseFloat(document.getElementById("discountType").value);
-  let custom = parseFloat(document.getElementById("customDiscount").value) || 0;
-  let finalDiscount = discount > 0 ? discount : custom;
-  let total = subtotal - (subtotal * finalDiscount / 100);
-  document.getElementById("totalText").innerText = "Total: ₱" + total.toFixed(2);
+function updateTotals() {
+    let subtotal = 0;
+    cart.forEach(item => subtotal += item.price * item.qty);
+    let discount = parseFloat(document.getElementById("discountType").value);
+    let custom = parseFloat(document.getElementById("customDiscount").value) || 0;
+    let finalDiscount = discount > 0 ? discount : custom;
+    let total = subtotal - (subtotal * finalDiscount / 100);
+    document.getElementById("totalText").innerText = "Total: ₱" + total.toFixed(2);
 }
 
 document.getElementById("amountInput").addEventListener("input", computeChange);
 
-function computeChange(){
-  let totalText = document.getElementById("totalText").innerText;
-  let total = parseFloat(totalText.replace("Total: ₱", "")) || 0;
-  let amount = parseFloat(document.getElementById("amountInput").value);
-
-  if(!amount || amount <= 0){
-    document.getElementById("changeText").innerText = "Change: ₱0";
-    return;
-  }
-  let change = amount - total;
-  document.getElementById("changeText").innerText = "Change: ₱" + change.toFixed(2);
+function computeChange() {
+    let totalText = document.getElementById("totalText").innerText;
+    let total = parseFloat(totalText.replace("Total: ₱", "")) || 0;
+    let amount = parseFloat(document.getElementById("amountInput").value);
+    if (!amount || amount <= 0) {
+        document.getElementById("changeText").innerText = "Change: ₱0.00";
+        return;
+    }
+    let change = amount - total;
+    document.getElementById("changeText").innerText = "Change: ₱" + change.toFixed(2);
 }
 
-function confirmPayment(){
-  const method = document.getElementById("paymentMethod").value;
-  const amount = parseFloat(document.getElementById("amountInput").value);
-  const totalText = document.getElementById("totalText").innerText;
-  const total = parseFloat(totalText.replace("Total: ₱", "")) || 0;
+function confirmPayment() {
+    const method = document.getElementById("paymentMethod").value;
+    const amount = parseFloat(document.getElementById("amountInput").value);
+    const totalText = document.getElementById("totalText").innerText;
+    const total = parseFloat(totalText.replace("Total: ₱", "")) || 0;
 
-  if(method === ""){
-    alert("Select payment method!");
-    return;
-  }
-  if(method === "Cash"){
-    if(isNaN(amount) || amount <= 0){
-      alert("Please enter a valid cash amount!");
-      return;
+    if (method === "") {
+        alert("Select payment method!");
+        return;
     }
-    if(amount < total){
-      alert("The entered amount is insufficient to complete the transaction.");
-      return;
+    if (method === "Cash") {
+        if (isNaN(amount) || amount <= 0) {
+            alert("Please enter a valid cash amount!");
+            return;
+        }
+        if (amount < total) {
+            alert("The entered amount is insufficient to complete the transaction.");
+            return;
+        }
     }
-  }
-  if(method === "GCash"){
-    alert("Redirect to GCash QR / Payment (Simulation only)");
-  }
+    if (method === "GCash") {
+        alert("Redirect to GCash QR / Payment (Simulation only)");
+    }
 
-  alert("Payment Successful!");
-  cart = [];
-  renderCart();
-  closeModal();
+    alert("Payment Successful!");
+    cart = [];
+    renderCart();
+    closeModal();
 }
 
-function handlePaymentMethod(){
-  const method = document.getElementById("paymentMethod").value;
-  document.getElementById("gcashBox").style.display = "none";
-  document.getElementById("cashBox").style.display = "none";
-  if(method === "GCash") document.getElementById("gcashBox").style.display = "block";
-  if(method === "Cash") document.getElementById("cashBox").style.display = "block";
+function handlePaymentMethod() {
+    const method = document.getElementById("paymentMethod").value;
+    document.getElementById("gcashBox").style.display = "none";
+    document.getElementById("cashBox").style.display = "none";
+    if (method === "GCash") document.getElementById("gcashBox").style.display = "block";
+    if (method === "Cash") document.getElementById("cashBox").style.display = "block";
 }
 
 /******************************** SIDEBAR TOGGLE ********************************/
 const menuBtn = document.getElementById("menu-btn");
 const sidebar = document.querySelector(".sidebar");
 const main = document.querySelector(".main");
-
-menuBtn.onclick = function() {
-  sidebar.classList.toggle("hide");
-  main.classList.toggle("full");
-};
+if(menuBtn){
+    menuBtn.onclick = function () {
+        sidebar.classList.toggle("hide");
+        main.classList.toggle("full");
+    };
+}
 
 /******************************** DATE & INITIAL LOAD ********************************/
-function updatePOSDate(){
-  const el = document.getElementById("todayDate");
-  const now = new Date();
-  el.textContent = "Today: " + now.toLocaleDateString('en-US', {
-    month: 'long', day: 'numeric', year: 'numeric'
-  });
+function updatePOSDate() {
+    const el = document.getElementById("todayDate");
+    const now = new Date();
+    el.textContent = "Today: " + now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
+
 async function loadMenuFromDatabase() {
-  try {
-    console.log("🔄 KUMUKUHA NG CATEGORIES...");
-    const categoriesRes = await fetch(API_URL + '?action=getCategories');
-    const categoriesText = await categoriesRes.text(); // makita kung ano talaga ang sagot
-    console.log("📩 RAW RESPONSE:", categoriesText);
+    try {
+        console.log("🔄 KUMUKUHA NG CATEGORIES...");
+        const categoriesRes = await fetch(API_URL + '?action=getCategories');
+        const categoriesText = await categoriesRes.text();
+        console.log("📩 RAW RESPONSE:", categoriesText);
+        const categoriesData = JSON.parse(categoriesText);
 
-    const categoriesData = JSON.parse(categoriesText);
+        if (categoriesData.status === 'success' && categoriesData.data.length > 0) {
+          allCategories = categoriesData.data.sort((a, b) => a.category_id - b.category_id);
+            menu = {};
+            console.log("✅ NAKUHA ANG CATEGORIES:", allCategories);
 
-    if (categoriesData.status === 'success' && categoriesData.data.length > 0) {
-      allCategories = categoriesData.data;
-      menu = {};
+            for (const cat of allCategories) {
+                console.log(`🔄 KUMUKUHA NG PRODUKTO PARA SA: ${cat.category_name}`);
+                const productsRes = await fetch(API_URL + `?action=getProducts&cat_id=${cat.category_id}`);
+                const productsText = await productsRes.text();
+                console.log(`📩 PRODUKTO PARA SA ${cat.category_name}:`, productsText);
+                const productsData = JSON.parse(productsText);
 
-      console.log("✅ NAKUHA ANG CATEGORIES:", allCategories);
-
-      for (const cat of allCategories) {
-        console.log(`🔄 KUMUKUHA NG PRODUKTO PARA SA: ${cat.category_name}`);
-        const productsRes = await fetch(API_URL + `?action=getProducts&cat_id=${cat.category_id}`);
-        const productsText = await productsRes.text();
-        console.log(`📩 PRODUKTO PARA SA ${cat.category_name}:`, productsText);
-
-        const productsData = JSON.parse(productsText);
-
-        if (productsData.status === 'success' && Array.isArray(productsData.data)) {
-          menu[cat.category_id] = productsData.data;
+                if (productsData.status === 'success' && Array.isArray(productsData.data)) {
+                    menu[cat.category_id] = productsData.data.sort((a, b) => a.product_id - b.product_id);
+                } else {
+                    menu[cat.category_id] = [];
+                }
+            }
+            currentCategory = {
+                id: allCategories[0].category_id,
+                name: allCategories[0].category_name
+            };
         } else {
-          menu[cat.category_id] = [];
+            allCategories = [];
+            menu = {};
+            currentCategory = { id: null, name: null };
         }
-      }
-
-      currentCategory = {
-        id: allCategories[0].category_id,
-        name: allCategories[0].category_name
-      };
-
-    } else {
-      allCategories = [];
-      menu = {};
-      currentCategory = { id: null, name: null };
+        renderCategories();
+        renderCurrentCategory();
+        renderCart();
+    } catch (e) {
+        console.error("❌ ERROR SA PAGKUHA:", e);
+        alert("Hindi makonekta / Mali ang sagot: " + e.message);
+        allCategories = [];
+        menu = {};
+        currentCategory = { id: null, name: null };
+        renderCategories();
+        renderCurrentCategory();
+        renderCart();
     }
-
-    renderCategories();
-    renderCurrentCategory();
-    renderCart();
-
-  } catch (e) {
-    console.error("❌ ERROR SA PAGKUHA:", e);
-    alert("Hindi makonekta / Mali ang sagot: " + e.message);
-    allCategories = [];
-    menu = {};
-    currentCategory = { id: null, name: null };
-    renderCategories();
-    renderCurrentCategory();
-    renderCart();
-  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  updatePOSDate(); 
-  loadMenuFromDatabase(); 
+    updatePOSDate();
+    loadMenuFromDatabase();
 });
 </script>
