@@ -5,6 +5,7 @@ if (session_status() == PHP_SESSION_NONE) {
 require_once '../website_php/auth_check.php'; 
 // ... rest of your code
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -485,6 +486,10 @@ body {
   color: #166534;
 }
 
+.status.out {
+    background: #fecdd3;
+    color: #991b1b;
+}
 /* ================= ACTIONS ================= */
 .actions {
   display: flex;
@@ -512,10 +517,11 @@ body {
   color: #0284c7;
 }
 
-.btn.restock {
-  background: #dcfce7;
-  color: #16a34a;
+.btn.delete {
+  background: #fecdd3;
+  color: #dc2626;
 }
+
 
 /* HOVER EFFECT */
 .btn:hover {
@@ -578,6 +584,57 @@ body {
 
 .add-btn:active {
   transform: scale(0.95);
+}
+
+/* ✅ DELETE CONFIRMATION MODAL */
+#deleteModal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+}
+#deleteModal .modal-content {
+  background: white;
+  width: 350px;
+  border-radius: 12px;
+  padding: 25px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  animation: pop 0.2s ease;
+}
+#deleteModal h3 {
+  color: #dc2626;
+  margin-bottom: 10px;
+}
+#deleteModal p {
+  color: #333;
+  margin-bottom: 20px;
+}
+#deleteModal .modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+#deleteModal .btn-cancel {
+  background: #e5e7eb;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+#deleteModal .btn-confirm {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 /* ================= MODAL ================= */
@@ -793,228 +850,6 @@ body {
 
     <tbody id="inventoryBody">
 
- <tr class="inventory-row">
-  <td class="item-name">Espresso Beans</td>
-  <td><span class="badge category">Beans</span></td>
-  <td class="supplier">Coffee Supplier Co.</td>
-  <td>kg</td>
-  <td class="stock">5</td>
-  <td class="cost">₱250</td>
-  <td class="total-value">₱1250</td>
-  <td class="reorder">10</td>
-  <td><span class="status low">Low Stock</span></td>
-  <td class="actions">
-    <button class="btn edit" onclick="editItem(this)">
-      <i class="fa-solid fa-pen"></i>
-    </button>
-    <button class="btn restock" onclick="restockItem(this)">
-      <i class="fa-solid fa-rotate"></i>
-    </button>
-  </td>
-</tr>
-
-<tr class="inventory-row">
-  <td class="item-name">Arabica Beans</td>
-  <td><span class="badge category">Beans</span></td>
-  <td class="supplier">Premium Beans PH</td>
-  <td>kg</td>
-  <td class="stock">18</td>
-  <td class="cost">₱300</td>
-  <td class="total-value">₱5400</td>
-  <td class="reorder">10</td>
-  <td><span class="status ok">In Stock</span></td>
-  <td class="actions">
-    <button class="btn edit" onclick="editItem(this)">
-      <i class="fa-solid fa-pen"></i>
-    </button>
-    <button class="btn restock" onclick="restockItem(this)">
-      <i class="fa-solid fa-rotate"></i>
-    </button>
-  </td>
-</tr>
-
-<tr class="inventory-row">
-  <td class="item-name">Robusta Beans</td>
-  <td><span class="badge category">Beans</span></td>
-  <td class="supplier">Local Farm Supply</td>
-  <td>kg</td>
-  <td class="stock">20</td>
-  <td class="cost">₱280</td>
-  <td class="total-value">₱5600</td>
-  <td class="reorder">10</td>
-  <td><span class="status ok">In Stock</span></td>
-  <td class="actions">
-    <button class="btn edit" onclick="editItem(this)">
-      <i class="fa-solid fa-pen"></i>
-    </button>
-    <button class="btn restock" onclick="restockItem(this)">
-      <i class="fa-solid fa-rotate"></i>
-    </button>
-  </td>
-</tr>
-
-<tr class="inventory-row">
-  <td class="item-name">Fresh Milk</td>
-  <td><span class="badge category">Dairy</span></td>
-  <td class="supplier">Alaska Supplier</td>
-  <td>liters</td>
-  <td class="stock">8</td>
-  <td class="cost">₱120</td>
-  <td class="total-value">₱960</td>
-  <td class="reorder">15</td>
-  <td><span class="status low">Low Stock</span></td>
-  <td class="actions">
-    <button class="btn edit" onclick="editItem(this)">
-      <i class="fa-solid fa-pen"></i>
-    </button>
-    <button class="btn restock" onclick="restockItem(this)">
-      <i class="fa-solid fa-rotate"></i>
-    </button>
-  </td>
-</tr>
-
-<tr class="inventory-row">
-  <td class="item-name">Oat Milk</td>
-  <td><span class="badge category">Dairy Alternative</span></td>
-  <td class="supplier">Healthy Options</td>
-  <td>liters</td>
-  <td class="stock">12</td>
-  <td class="cost">₱160</td>
-  <td class="total-value">₱1920</td>
-  <td class="reorder">10</td>
-  <td><span class="status ok">In Stock</span></td>
-  <td class="actions">
-    <button class="btn edit" onclick="editItem(this)">
-      <i class="fa-solid fa-pen"></i>
-    </button>
-    <button class="btn restock" onclick="restockItem(this)">
-      <i class="fa-solid fa-rotate"></i>
-    </button>
-  </td>
-</tr>
-
-<tr class="inventory-row">
-  <td class="item-name">Chocolate Syrup</td>
-  <td><span class="badge category">Syrup</span></td>
-  <td class="supplier">Torani PH</td>
-  <td>bottle</td>
-  <td class="stock">6</td>
-  <td class="cost">₱180</td>
-  <td class="total-value">₱1080</td>
-  <td class="reorder">10</td>
-  <td><span class="status low">Low Stock</span></td>
-  <td class="actions">
-    <button class="btn edit" onclick="editItem(this)">
-      <i class="fa-solid fa-pen"></i>
-    </button>
-    <button class="btn restock" onclick="restockItem(this)">
-      <i class="fa-solid fa-rotate"></i>
-    </button>
-  </td>
-</tr>
-
-<tr class="inventory-row">
-  <td class="item-name">Caramel Syrup</td>
-  <td><span class="badge category">Syrup</span></td>
-  <td class="supplier">Torani PH</td>
-  <td>bottle</td>
-  <td class="stock">14</td>
-  <td class="cost">₱190</td>
-  <td class="total-value">₱2660</td>
-  <td class="reorder">10</td>
-  <td><span class="status ok">In Stock</span></td>
-  <td class="actions">
-    <button class="btn edit" onclick="editItem(this)">
-      <i class="fa-solid fa-pen"></i>
-    </button>
-    <button class="btn restock" onclick="restockItem(this)">
-      <i class="fa-solid fa-rotate"></i>
-    </button>
-  </td>
-</tr>
-
-<tr class="inventory-row">
-  <td class="item-name">Vanilla Syrup</td>
-  <td><span class="badge category">Syrup</span></td>
-  <td class="supplier">DaVinci Gourmet</td>
-  <td>bottle</td>
-  <td class="stock">9</td>
-  <td class="cost">₱200</td>
-  <td class="total-value">₱1800</td>
-  <td class="reorder">10</td>
-  <td><span class="status low">Low Stock</span></td>
-  <td class="actions">
-    <button class="btn edit" onclick="editItem(this)">
-      <i class="fa-solid fa-pen"></i>
-    </button>
-    <button class="btn restock" onclick="restockItem(this)">
-      <i class="fa-solid fa-rotate"></i>
-    </button>
-  </td>
-</tr>
-
-<tr class="inventory-row">
-  <td class="item-name">Ice Cubes</td>
-  <td><span class="badge category">Supplies</span></td>
-  <td class="supplier">Local Ice Plant</td>
-  <td>kg</td>
-  <td class="stock">25</td>
-  <td class="cost">₱50</td>
-  <td class="total-value">₱1250</td>
-  <td class="reorder">10</td>
-  <td><span class="status ok">In Stock</span></td>
-  <td class="actions">
-    <button class="btn edit" onclick="editItem(this)">
-      <i class="fa-solid fa-pen"></i>
-    </button>
-    <button class="btn restock" onclick="restockItem(this)">
-      <i class="fa-solid fa-rotate"></i>
-    </button>
-  </td>
-</tr>
-
-<tr class="inventory-row">
-  <td class="item-name">Sugar</td>
-  <td><span class="badge category">Ingredients</span></td>
-  <td class="supplier">Puregold Supplier</td>
-  <td>kg</td>
-  <td class="stock">30</td>
-  <td class="cost">₱70</td>
-  <td class="total-value">₱2100</td>
-  <td class="reorder">15</td>
-  <td><span class="status ok">In Stock</span></td>
-  <td class="actions">
-    <button class="btn edit" onclick="editItem(this)">
-      <i class="fa-solid fa-pen"></i>
-    </button>
-    <button class="btn restock" onclick="restockItem(this)">
-      <i class="fa-solid fa-rotate"></i>
-    </button>
-  </td>
-</tr>
-
-<tr class="inventory-row">
-  <td class="item-name">Brown Sugar</td>
-  <td><span class="badge category">Ingredients</span></td>
-  <td class="supplier">Puregold Supplier</td>
-  <td>kg</td>
-  <td class="stock">7</td>
-  <td class="cost">₱80</td>
-  <td class="total-value">₱560</td>
-  <td class="reorder">15</td>
-  <td><span class="status low">Low Stock</span></td>
-  <td class="actions">
-    <button class="btn edit" onclick="editItem(this)">
-      <i class="fa-solid fa-pen"></i>
-    </button>
-    <button class="btn restock" onclick="restockItem(this)">
-      <i class="fa-solid fa-rotate"></i>
-    </button>
-  </td>
-</tr>
-
-    <!-- Continue same pattern for remaining rows... -->
-
     </tbody>
   </table>
 </div>
@@ -1035,6 +870,7 @@ body {
       <input type="text" id="supplier" placeholder="Supplier">
       <input type="text" id="unit" placeholder="Unit (kg, pcs, etc)">
       <input type="number" id="stock" placeholder="Stock">
+      <input type="number" id="cost" placeholder="Cost">
       <input type="number" id="reorder" placeholder="Reorder Level">
 
     </div>
@@ -1046,6 +882,19 @@ body {
 
   </div>
 </div>
+
+<!-- ✅ DELETE CONFIRMATION MODAL HTML -->
+<div id="deleteModal">
+  <div class="modal-content">
+    <h3>⚠️ Confirm Delete</h3>
+    <p>Are you sure you want to delete this item?<br><small>This action cannot be undone.</small></p>
+    <div class="modal-buttons">
+      <button class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn-confirm" onclick="confirmDelete()">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
 <script>
@@ -1134,18 +983,69 @@ updateTodayDate();
 
 /******************************** INVENTORY SYSTEM ********************************/
 
+function loadInventory() {
+  fetch("../website_php/inventory_api.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: "action=fetch"
+  })
+  .then(res => res.json())
+  .then(data => {
+    let tbody = document.getElementById("inventoryBody");
+    tbody.innerHTML = "";
+
+    data.forEach(item => {
+
+      // ✅ BAGONG KONDISYON: Out of Stock > Low Stock > In Stock
+      let status;
+      if (item.stock == 0) {
+        status = `<span class="status out">Out of Stock</span>`;
+      } else if (item.stock <= item.reorder_level) {
+        status = `<span class="status low">Low Stock</span>`;
+      } else {
+    status = `<span class="status ok">In Stock</span>`;
+  }
+
+      tbody.innerHTML += `
+        <tr data-id="${item.id}" class="inventory-row">
+          <td class="item-name">${item.item_name}</td>
+          <td><span class="badge category">${item.category}</span></td>
+          <td>${item.supplier}</td>
+          <td>${item.unit}</td>
+          <td class="stock">${item.stock}</td>
+          <td class="cost">₱${item.cost}</td>
+          <td class="total-value">₱${(item.stock * item.cost).toFixed(2)}</td>
+          <td>${item.reorder_level}</td>
+          <td>${status}</td>
+          <td class="actions">
+            <button class="btn edit" onclick="editItem(this)">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="btn delete" onclick="deleteItem(this)">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+  });
+}
+
+loadInventory();
+
 function updateStatus() {
   let rows = document.querySelectorAll("#inventoryBody tr");
 
   rows.forEach(row => {
-    let stock = row.querySelector(".stock");
+    let stock = parseInt(row.querySelector(".stock").innerText);
     let status = row.querySelector(".status");
-    let reorder = row.children[5].innerText;
+    let reorder = parseInt(row.children[7].innerText); // siguraduhing tama ang index ng reorder level
 
-    let stockVal = parseInt(stock.innerText);
-    let reorderVal = parseInt(reorder);
-
-    if (stockVal <= reorderVal) {
+    // ✅ BAGONG KONDISYON
+    if (stock === 0) {
+      status.innerText = "Out of Stock";
+      status.className = "status out";
+    } else if (stock <= reorder) {
       status.innerText = "Low Stock";
       status.className = "status low";
     } else {
@@ -1213,30 +1113,41 @@ function saveRow(row, btn) {
   }
 
   // STATUS UPDATE
-  let status = row.querySelector(".status");
+let status = row.querySelector(".status");
 
-  if (stock <= reorder) {
-    status.innerText = "Low Stock";
-    status.className = "status low";
-  } else {
-    status.innerText = "In Stock";
-    status.className = "status ok";
-  }
+if (stock === 0) {
+  status.innerText = "Out of Stock";
+  status.className = "status out";
+} else if (stock <= reorder) {
+  status.innerText = "Low Stock";
+  status.className = "status low";
+} else {
+  status.innerText = "In Stock";
+  status.className = "status ok";
+}
 
   // reset edit state
   row.classList.remove("editing");
   btn.innerHTML = `<i class="fa-solid fa-pen"></i>`;
-}
-function restockItem(btn) {
-  if (!confirm("Add 5 stock to this item?")) return;
 
-  let row = btn.parentElement.parentElement;
-  let stock = row.querySelector(".stock");
+  let id = row.getAttribute("data-id");
 
-  stock.innerText = parseInt(stock.innerText) + 5;
+fetch("../website_php/inventory_api.php", {
+  method: "POST",
+  headers: {"Content-Type": "application/x-www-form-urlencoded"},
+  body: new URLSearchParams({
+    action: "update",
+    id,
+    item_name: name,
+    category,
+    supplier,
+    unit,
+    stock,
+    cost,
+    reorder_level: reorder
+  })
+});
 
-  updateStatus();
-  updateTotalValue(row); // 🔥 AUTO UPDATE VALUE
 }
 
 updateStatus();
@@ -1339,43 +1250,35 @@ function updateArrows(activeHeader, isAsc) {
   }
 }
 
-
 function addItem() {
+  let data = new URLSearchParams({
+    action: "add",
+    item_name: document.getElementById("itemName").value,
+    category: document.getElementById("category").value,
+    supplier: document.getElementById("supplier").value,
+    unit: document.getElementById("unit").value,
+    stock: document.getElementById("stock").value,
+    cost: document.getElementById("cost")?.value || 0,
+    reorder_level: document.getElementById("reorder").value
+  });
 
-  let category = prompt("Enter Category:");
-  let supplier = prompt("Enter Supplier:");
-  let unit = prompt("Enter Unit (kg, pcs, etc):");
-  let stock = prompt("Enter Stock:");
-  let reorder = prompt("Enter Reorder Level:");
+  if (!data.get("item_name") || !data.get("stock") || !data.get("reorder_level")) {
+    alert("Please complete required fields!");
+    return;
+  }
 
-  if (!name || !stock || !reorder) return;
-
-  let tbody = document.getElementById("inventoryBody");
-
-  let row = `
-    <tr class="inventory-row">
-      <td class="item-name">${name}</td>
-      <td><span class="badge category">${category}</span></td>
-      <td class="supplier">${supplier}</td>
-      <td>${unit}</td>
-      <td class="stock">${stock}</td>
-      <td>${reorder}</td>
-      <td><span class="status ok">In Stock</span></td>
-      <td class="actions">
-        <button class="btn edit" onclick="editItem(this)">
-          <i class="fa-solid fa-pen"></i>
-        </button>
-        <button class="btn restock" onclick="restockItem(this)">
-          <i class="fa-solid fa-rotate"></i>
-        </button>
-      </td>
-    </tr>
-  `;
-
-  tbody.insertAdjacentHTML("beforeend", row);
-
-  updateStatus();
+  fetch("../website_php/inventory_api.php", {
+  method: "POST",
+  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  body: data
+})
+  .then(res => res.json())
+  .then(() => {
+    closeModal();
+    loadInventory();
+  });
 }
+
 function openModal() {
   document.getElementById("addModal").classList.add("show");
 }
@@ -1384,55 +1287,10 @@ function closeModal() {
   document.getElementById("addModal").classList.remove("show");
 }
 
-function addItem() {
-  let name = document.getElementById("itemName").value;
-  let category = document.getElementById("category").value;
-  let supplier = document.getElementById("supplier").value;
-  let unit = document.getElementById("unit").value;
-  let stock = document.getElementById("stock").value;
-  let reorder = document.getElementById("reorder").value;
-
-  if (!name || !stock || !reorder) {
-    alert("Please complete required fields!");
-    return;
-  }
-
-  let tbody = document.getElementById("inventoryBody");
-
-  let status = stock <= reorder
-    ? `<span class="status low">Low Stock</span>`
-    : `<span class="status ok">In Stock</span>`;
-
-  let row = `
-    <tr class="inventory-row">
-      <td class="item-name">${name}</td>
-      <td><span class="badge category">${category}</span></td>
-      <td class="supplier">${supplier}</td>
-      <td>${unit}</td>
-      <td class="stock">${stock}</td>
-      <td>${reorder}</td>
-      <td>${status}</td>
-      <td class="actions">
-        <button class="btn edit" onclick="editItem(this)">
-          <i class="fa-solid fa-pen"></i>
-        </button>
-        <button class="btn restock" onclick="restockItem(this)">
-          <i class="fa-solid fa-rotate"></i>
-        </button>
-      </td>
-    </tr>
-  `;
-
-  tbody.insertAdjacentHTML("beforeend", row);
-
-  closeModal();
-}
-
 function updateTotalValue(row) {
   let stock = parseFloat(row.querySelector(".stock").innerText);
   let costText = row.querySelector(".cost").innerText.replace("₱", "");
   let cost = parseFloat(costText);
-
   let total = stock * cost;
 
   let totalCell = row.querySelector(".total-value");
@@ -1448,4 +1306,33 @@ function updateAllTotalValues() {
 }
 
 updateAllTotalValues();
+
+// ✅ UPDATED DELETE FUNCTION WITH MODAL
+let rowToDelete = null; // para matandaan kung aling row ang buburahin
+
+function deleteItem(btn) {
+  rowToDelete = btn.closest("tr"); // kunin ang row na pipindutin
+  document.getElementById("deleteModal").style.display = "flex"; // ipakita ang modal
+}
+
+function closeDeleteModal() {
+  document.getElementById("deleteModal").style.display = "none"; // itago ang modal
+  rowToDelete = null; // i-clear
+}
+
+function confirmDelete() {
+  if (!rowToDelete) return;
+
+  let id = rowToDelete.getAttribute("data-id");
+
+  fetch("../website_php/inventory_api.php", {
+    method: "POST",
+    headers: {"Content-Type": "application/x-www-form-urlencoded"},
+    body: "action=delete&id=" + id
+  })
+  .then(() => {
+    rowToDelete.remove();
+    closeDeleteModal();
+  });
+}
 </script>
