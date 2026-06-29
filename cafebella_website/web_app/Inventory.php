@@ -3,7 +3,6 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 require_once '../website_php/auth_check.php'; 
-// ... rest of your code
 ?>
 
 <!DOCTYPE html>
@@ -490,6 +489,7 @@ body {
     background: #fecdd3;
     color: #991b1b;
 }
+
 /* ================= ACTIONS ================= */
 .actions {
   display: flex;
@@ -517,11 +517,10 @@ body {
   color: #0284c7;
 }
 
-.btn.delete {
-  background: #fecdd3;
-  color: #dc2626;
+.btn.restock {
+  background: #dcfce7;
+  color: #16a34a;
 }
-
 
 /* HOVER EFFECT */
 .btn:hover {
@@ -584,57 +583,6 @@ body {
 
 .add-btn:active {
   transform: scale(0.95);
-}
-
-/* ✅ DELETE CONFIRMATION MODAL */
-#deleteModal {
-  display: none;
-  position: fixed;
-  z-index: 9999;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
-  justify-content: center;
-  align-items: center;
-}
-#deleteModal .modal-content {
-  background: white;
-  width: 350px;
-  border-radius: 12px;
-  padding: 25px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  animation: pop 0.2s ease;
-}
-#deleteModal h3 {
-  color: #dc2626;
-  margin-bottom: 10px;
-}
-#deleteModal p {
-  color: #333;
-  margin-bottom: 20px;
-}
-#deleteModal .modal-buttons {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-}
-#deleteModal .btn-cancel {
-  background: #e5e7eb;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-#deleteModal .btn-confirm {
-  background: #dc2626;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
 }
 
 /* ================= MODAL ================= */
@@ -730,19 +678,40 @@ body {
 <!--------------------------------------- MENU SIDEBAR ---------------------------------------------> 
     <div class="menu">
       <button data-page="Dashboard.php"><img src="IMAGES/dashboardpic.png" class="icon">Dashboard</button>
+
+      <?php if(isAdmin()): ?>
       <button data-page="Calendar.php"><img src="IMAGES/calendaricon.png" class="icon">Calendar</button>
+      <?php endif; ?>
+
       <button data-page="POS.php"><img src="IMAGES/POSicon.png" class="icon">Point of Sale</button>
       <button data-page="Transactionhistory.php"><img src="IMAGES/transactionhistoryicon.png" class="icon">Transaction History</button>
-      <button data-page="Reports.php"><img src="IMAGES/reporticon.png" class="icon">Reports</button>
-      <button data-page="Bookingrequest.php"><img src="IMAGES/Bookingicon.png" class="icon">Booking Request</button>
-      <button data-page="Eventmanagement.php"><img src="IMAGES/eventmanagementicon.png" class="icon">Event Management</button>
-      <button data-page="Inventory.php"><img src="IMAGES/inventoryicon.png" class="icon">Inventory</button>
-      <button data-page="Feedback.php"><img src="IMAGES/feedbackicon.png" class="icon">Customer Feedback</button>
+
       <?php if(isAdmin()): ?>
-<button data-page="Settings.php"><img src="IMAGES/settingsicon.png" class="icon">Settings</button>
-<?php endif; ?>
+      <button data-page="Reports.php"><img src="IMAGES/reporticon.png" class="icon">Reports</button>
+      <?php endif; ?>
+
+      <?php if(isAdmin()): ?>
+      <button data-page="Bookingrequest.php"><img src="IMAGES/Bookingicon.png" class="icon">Booking Request</button>
+      <?php endif; ?>
+
+      <?php if(isAdmin()): ?>
+      <button data-page="Eventmanagement.php"><img src="IMAGES/eventmanagementicon.png" class="icon">Event Management</button>
+      <?php endif; ?>
+      
+      <button data-page="Inventory.php"><img src="IMAGES/inventoryicon.png" class="icon">Inventory</button>
+
+      <?php if(isAdmin()): ?>
+      <button data-page="Feedback.php"><img src="IMAGES/feedbackicon.png" class="icon">Customer Feedback</button>
+      <?php endif; ?>
+
+      <?php if(isAdmin()): ?>
+      <button data-page="Settings.php"><img src="IMAGES/settingsicon.png" class="icon">Settings</button>
+      <?php endif; ?>
+
     </div>
+
     </div> 
+
 
 <!--------------------------------------- MAIN ---------------------------------------------> 
     <div class="main">
@@ -870,7 +839,7 @@ body {
       <input type="text" id="supplier" placeholder="Supplier">
       <input type="text" id="unit" placeholder="Unit (kg, pcs, etc)">
       <input type="number" id="stock" placeholder="Stock">
-      <input type="number" id="cost" placeholder="Cost">
+      <input type="number" step="0.01" id="cost" placeholder="Cost (₱)">
       <input type="number" id="reorder" placeholder="Reorder Level">
 
     </div>
@@ -882,19 +851,6 @@ body {
 
   </div>
 </div>
-
-<!-- ✅ DELETE CONFIRMATION MODAL HTML -->
-<div id="deleteModal">
-  <div class="modal-content">
-    <h3>⚠️ Confirm Delete</h3>
-    <p>Are you sure you want to delete this item?<br><small>This action cannot be undone.</small></p>
-    <div class="modal-buttons">
-      <button class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
-      <button class="btn-confirm" onclick="confirmDelete()">Yes, Delete</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
 <script>
@@ -983,74 +939,23 @@ updateTodayDate();
 
 /******************************** INVENTORY SYSTEM ********************************/
 
-function loadInventory() {
-  fetch("../website_php/inventory_api.php", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: "action=fetch"
-  })
-  .then(res => res.json())
-  .then(data => {
-    let tbody = document.getElementById("inventoryBody");
-    tbody.innerHTML = "";
-
-    data.forEach(item => {
-
-      // ✅ BAGONG KONDISYON: Out of Stock > Low Stock > In Stock
-      let status;
-      if (item.stock == 0) {
-        status = `<span class="status out">Out of Stock</span>`;
-      } else if (item.stock <= item.reorder_level) {
-        status = `<span class="status low">Low Stock</span>`;
-      } else {
-    status = `<span class="status ok">In Stock</span>`;
-  }
-
-      tbody.innerHTML += `
-        <tr data-id="${item.id}" class="inventory-row">
-          <td class="item-name">${item.item_name}</td>
-          <td><span class="badge category">${item.category}</span></td>
-          <td>${item.supplier}</td>
-          <td>${item.unit}</td>
-          <td class="stock">${item.stock}</td>
-          <td class="cost">₱${item.cost}</td>
-          <td class="total-value">₱${(item.stock * item.cost).toFixed(2)}</td>
-          <td>${item.reorder_level}</td>
-          <td>${status}</td>
-          <td class="actions">
-            <button class="btn edit" onclick="editItem(this)">
-              <i class="fa-solid fa-pen"></i>
-            </button>
-            <button class="btn delete" onclick="deleteItem(this)">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-      `;
-    });
-  });
-}
-
-loadInventory();
-
 function updateStatus() {
-  let rows = document.querySelectorAll("#inventoryBody tr");
+  const rows = document.querySelectorAll("#inventoryBody tr");
 
   rows.forEach(row => {
-    let stock = parseInt(row.querySelector(".stock").innerText);
-    let status = row.querySelector(".status");
-    let reorder = parseInt(row.children[7].innerText); // siguraduhing tama ang index ng reorder level
+    const stockVal = parseInt(row.querySelector(".stock").innerText) || 0;
+    const reorderVal = parseInt(row.querySelector(".reorder").innerText) || 0;
+    const statusEl = row.querySelector(".status");
 
-    // ✅ BAGONG KONDISYON
-    if (stock === 0) {
-      status.innerText = "Out of Stock";
-      status.className = "status out";
-    } else if (stock <= reorder) {
-      status.innerText = "Low Stock";
-      status.className = "status low";
+    if (stockVal <= 0) {
+      statusEl.textContent = "Out of Stock";
+      statusEl.className = "status out";
+    } else if (stockVal <= reorderVal) {
+      statusEl.textContent = "Low Stock";
+      statusEl.className = "status low";
     } else {
-      status.innerText = "In Stock";
-      status.className = "status ok";
+      statusEl.textContent = "In Stock";
+      statusEl.className = "status ok";
     }
   });
 }
@@ -1113,41 +1018,30 @@ function saveRow(row, btn) {
   }
 
   // STATUS UPDATE
-let status = row.querySelector(".status");
+  let status = row.querySelector(".status");
 
-if (stock === 0) {
-  status.innerText = "Out of Stock";
-  status.className = "status out";
-} else if (stock <= reorder) {
-  status.innerText = "Low Stock";
-  status.className = "status low";
-} else {
-  status.innerText = "In Stock";
-  status.className = "status ok";
-}
+  if (stock <= reorder) {
+    status.innerText = "Low Stock";
+    status.className = "status low";
+  } else {
+    status.innerText = "In Stock";
+    status.className = "status ok";
+  }
 
   // reset edit state
   row.classList.remove("editing");
   btn.innerHTML = `<i class="fa-solid fa-pen"></i>`;
+}
+function restockItem(btn) {
+  if (!confirm("Add 5 stock to this item?")) return;
 
-  let id = row.getAttribute("data-id");
+  let row = btn.parentElement.parentElement;
+  let stock = row.querySelector(".stock");
 
-fetch("../website_php/inventory_api.php", {
-  method: "POST",
-  headers: {"Content-Type": "application/x-www-form-urlencoded"},
-  body: new URLSearchParams({
-    action: "update",
-    id,
-    item_name: name,
-    category,
-    supplier,
-    unit,
-    stock,
-    cost,
-    reorder_level: reorder
-  })
-});
+  stock.innerText = parseInt(stock.innerText) + 5;
 
+  updateStatus();
+  updateTotalValue(row); // 🔥 AUTO UPDATE VALUE
 }
 
 updateStatus();
@@ -1250,35 +1144,43 @@ function updateArrows(activeHeader, isAsc) {
   }
 }
 
+
 function addItem() {
-  let data = new URLSearchParams({
-    action: "add",
-    item_name: document.getElementById("itemName").value,
-    category: document.getElementById("category").value,
-    supplier: document.getElementById("supplier").value,
-    unit: document.getElementById("unit").value,
-    stock: document.getElementById("stock").value,
-    cost: document.getElementById("cost")?.value || 0,
-    reorder_level: document.getElementById("reorder").value
-  });
 
-  if (!data.get("item_name") || !data.get("stock") || !data.get("reorder_level")) {
-    alert("Please complete required fields!");
-    return;
-  }
+  let category = prompt("Enter Category:");
+  let supplier = prompt("Enter Supplier:");
+  let unit = prompt("Enter Unit (kg, pcs, etc):");
+  let stock = prompt("Enter Stock:");
+  let reorder = prompt("Enter Reorder Level:");
 
-  fetch("../website_php/inventory_api.php", {
-  method: "POST",
-  headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  body: data
-})
-  .then(res => res.json())
-  .then(() => {
-    closeModal();
-    loadInventory();
-  });
+  if (!name || !stock || !reorder) return;
+
+  let tbody = document.getElementById("inventoryBody");
+
+  let row = `
+    <tr class="inventory-row">
+      <td class="item-name">${name}</td>
+      <td><span class="badge category">${category}</span></td>
+      <td class="supplier">${supplier}</td>
+      <td>${unit}</td>
+      <td class="stock">${stock}</td>
+      <td>${reorder}</td>
+      <td><span class="status ok">In Stock</span></td>
+      <td class="actions">
+        <button class="btn edit" onclick="editItem(this)">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button class="btn restock" onclick="restockItem(this)">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+      </td>
+    </tr>
+  `;
+
+  tbody.insertAdjacentHTML("beforeend", row);
+
+  updateStatus();
 }
-
 function openModal() {
   document.getElementById("addModal").classList.add("show");
 }
@@ -1287,10 +1189,55 @@ function closeModal() {
   document.getElementById("addModal").classList.remove("show");
 }
 
+function addItem() {
+  let name = document.getElementById("itemName").value;
+  let category = document.getElementById("category").value;
+  let supplier = document.getElementById("supplier").value;
+  let unit = document.getElementById("unit").value;
+  let stock = document.getElementById("stock").value;
+  let reorder = document.getElementById("reorder").value;
+
+  if (!name || !stock || !reorder) {
+    alert("Please complete required fields!");
+    return;
+  }
+
+  let tbody = document.getElementById("inventoryBody");
+
+  let status = stock <= reorder
+    ? `<span class="status low">Low Stock</span>`
+    : `<span class="status ok">In Stock</span>`;
+
+  let row = `
+    <tr class="inventory-row">
+      <td class="item-name">${name}</td>
+      <td><span class="badge category">${category}</span></td>
+      <td class="supplier">${supplier}</td>
+      <td>${unit}</td>
+      <td class="stock">${stock}</td>
+      <td>${reorder}</td>
+      <td>${status}</td>
+      <td class="actions">
+        <button class="btn edit" onclick="editItem(this)">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button class="btn restock" onclick="restockItem(this)">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+      </td>
+    </tr>
+  `;
+
+  tbody.insertAdjacentHTML("beforeend", row);
+
+  closeModal();
+}
+
 function updateTotalValue(row) {
   let stock = parseFloat(row.querySelector(".stock").innerText);
   let costText = row.querySelector(".cost").innerText.replace("₱", "");
   let cost = parseFloat(costText);
+
   let total = stock * cost;
 
   let totalCell = row.querySelector(".total-value");
@@ -1307,32 +1254,173 @@ function updateAllTotalValues() {
 
 updateAllTotalValues();
 
-// ✅ UPDATED DELETE FUNCTION WITH MODAL
-let rowToDelete = null; // para matandaan kung aling row ang buburahin
+// --------------------------
+// Kumuha ng datos mula sa database
+// --------------------------
+async function loadInventory() {
+  try {
+    const response = await fetch('../website_php/inventory_api.php');
+    const result = await response.json();
 
-function deleteItem(btn) {
-  rowToDelete = btn.closest("tr"); // kunin ang row na pipindutin
-  document.getElementById("deleteModal").style.display = "flex"; // ipakita ang modal
+    if (result.status === 'success') {
+      const tbody = document.getElementById('inventoryBody');
+      tbody.innerHTML = ''; // Linisin muna ang laman
+
+      result.data.forEach(item => {
+        const totalValue = (parseFloat(item.stock) * parseFloat(item.cost)).toFixed(2);
+
+        let status;
+          if (parseInt(item.stock) <= 0) {
+            status = '<span class="status out">Out of Stock</span>';
+          } else if (parseInt(item.stock) <= parseInt(item.reorder_level)) {
+            status = '<span class="status low">Low Stock</span>';
+          } else {
+            status = '<span class="status ok">In Stock</span>';
+          }
+
+        const row = `
+          <tr class="inventory-row" data-id="${item.id}">
+            <td class="item-name">${item.item_name}</td>
+            <td><span class="badge category">${item.categories || ''}</span></td>
+            <td class="supplier">${item.supplier || ''}</td>
+            <td>${item.unit || ''}</td>
+            <td class="stock">${item.stock}</td>
+            <td class="cost">₱${parseFloat(item.cost).toFixed(2)}</td>
+            <td class="total-value">₱${totalValue}</td>
+            <td class="reorder">${item.reorder_level || 0}</td>
+            <td>${status}</td>
+            <td class="actions">
+              <button class="btn edit" onclick="editItem(this)">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button class="btn restock" onclick="restockItem(this)">
+                <i class="fa-solid fa-rotate"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+        tbody.insertAdjacentHTML('beforeend', row);
+      });
+
+      updateAllTotalValues();
+      updateStatus();
+    } else {
+      alert('Error loading items: ' + result.message);
+    }
+  } catch (err) {
+    console.error('Fetch error:', err);
+    alert('Could not connect to database.');
+  }
 }
 
-function closeDeleteModal() {
-  document.getElementById("deleteModal").style.display = "none"; // itago ang modal
-  rowToDelete = null; // i-clear
+// --------------------------
+// Baguhin ang addItem para makapag-save sa database
+// --------------------------
+async function addItem() {
+  const name = document.getElementById("itemName").value.trim();
+  const category = document.getElementById("category").value.trim();
+  const supplier = document.getElementById("supplier").value.trim();
+  const unit = document.getElementById("unit").value.trim();
+  const stock = document.getElementById("stock").value.trim();
+  const cost = document.getElementById("cost").value.trim();
+  const reorder = document.getElementById("reorder").value.trim();
+
+  if (!name || !stock || !cost || !reorder) {
+    alert("Please fill all required fields!");
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('item_name', name);
+    formData.append('categories', category);
+    formData.append('supplier', supplier);
+    formData.append('unit', unit);
+    formData.append('stock', stock);
+    formData.append('cost', cost);
+    formData.append('reorder_level', reorder);
+
+    const response = await fetch('../website_php/inventory_api.php', {
+      method: 'POST',
+      body: formData
+    });
+
+    const result = await response.json();
+    if (result.status === 'success') {
+      closeModal();
+      loadInventory(); // I-refresh ang listahan
+    } else {
+      alert('Error: ' + result.message);
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Failed to add item.');
+  }
 }
 
-function confirmDelete() {
-  if (!rowToDelete) return;
+// --------------------------
+// Baguhin ang saveRow para ma-update ang database
+// --------------------------
+async function saveRow(row, btn) {
+  const id = row.dataset.id;
+  const name = row.querySelector(".item-name input").value.trim();
+  const category = row.children[1].querySelector("input").value.trim();
+  const supplier = row.children[2].querySelector("input").value.trim();
+  const unit = row.children[3].querySelector("input").value.trim();
+  const stock = parseFloat(row.querySelector(".stock input").value);
+  const cost = parseFloat(row.querySelector(".cost input").value);
+  const reorder = parseFloat(row.children[7].querySelector("input").value);
 
-  let id = rowToDelete.getAttribute("data-id");
+  if (!name || isNaN(stock) || isNaN(cost) || isNaN(reorder)) {
+    alert("Invalid input!");
+    return;
+  }
 
-  fetch("../website_php/inventory_api.php", {
-    method: "POST",
-    headers: {"Content-Type": "application/x-www-form-urlencoded"},
-    body: "action=delete&id=" + id
-  })
-  .then(() => {
-    rowToDelete.remove();
-    closeDeleteModal();
-  });
+  try {
+    const response = await fetch('../website_php/inventory_api.php', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `id=${id}&item_name=${encodeURIComponent(name)}&categories=${encodeURIComponent(category)}&supplier=${encodeURIComponent(supplier)}&unit=${encodeURIComponent(unit)}&stock=${stock}&cost=${cost}&reorder_level=${reorder}`
+    });
+
+    const result = await response.json();
+    if (result.status === 'success') {
+      loadInventory(); // I-refresh ang listahan
+    } else {
+      alert('Error: ' + result.message);
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Failed to update item.');
+  }
 }
+
+async function restockItem(btn) {
+  if (!confirm("Add 5 stock to this item?")) return;
+
+  const row = btn.closest("tr");
+  const id = row.dataset.id;
+  const currentStock = parseInt(row.querySelector(".stock").innerText);
+  const newStock = currentStock + 5;
+
+  try {
+    const response = await fetch('../website_php/inventory_api.php', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `id=${id}&stock=${newStock}&update_stock_only=1`
+    });
+
+    const result = await response.json();
+    if (result.status === 'success') {
+      loadInventory();
+    } else {
+      alert('Error: ' + result.message);
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Failed to restock.');
+  }
+}
+window.addEventListener('load', loadInventory);
+
 </script>
