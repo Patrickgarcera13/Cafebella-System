@@ -2,9 +2,68 @@
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-require_once '../website_php/auth_check.php'; 
-// ... rest of your code
+require_once '../website_php/auth_check.php';
+require_once '../website_php/database.php';
+
+$admin_count_stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'Admin' AND is_banned = 0 AND is_approved = 1");
+$active_admin_count = $admin_count_stmt->fetchColumn();
+
+if (!isAdmin()) {
+    header("Location: ../login.html?error=unauthorized_access");
+    exit();
+}
+
+// Kumuha ng lahat ng booking mula sa database
+try {
+    $sql = "SELECT 
+                receipt_code,
+                full_name,
+                email,
+                contact_number,
+                service_type,
+                guest_count,
+                event_date,
+                event_time,
+                province,
+                city,
+                barangay,
+                street_address,
+                total_amount,
+                status,
+                payment_type,
+                payment_reference,
+                additional_notes,
+                created_at
+            FROM bookings 
+            ORDER BY event_date ASC, event_time ASC";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute();
+    $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Kuwentahin ang mga estadistika
+    $total_events = count($events);
+    $upcoming = 0;
+    $completed = 0;
+    $total_sales = 0;
+    $today = date('Y-m-d');
+
+    foreach ($events as $e) {
+        $total_sales += $e['total_amount'];
+
+        // Ayusin ang status base sa petsa at status
+        if ($e['status'] === 'Confirmed' && $e['event_date'] >= $today) {
+            $upcoming++;
+        } elseif ($e['event_date'] < $today) {
+            $completed++;
+        }
+    }
+
+} catch (PDOException $e) {
+    die("Error loading events: " . $e->getMessage());
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -738,17 +797,17 @@ body {
   justify-content:center;
   z-index:999;
 }
-.modal-box{
-  background: #ffffff;
-  border-radius: 20px;
-  width: 450px;
-  max-height: 80vh;   
-  padding: 25px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.15);
-  animation: fadeIn 0.25s ease;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; 
+.modal-box {
+    background-color: white;
+    margin: auto;
+    padding: 25px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh; /* Limit ang taas para hindi lumagpas sa screen */
+    overflow-y: auto;  /* Mag-scroll kapag mahaba ang laman */
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 .modal-box h3{
   font-size: 18px;
@@ -768,6 +827,12 @@ body {
 .close:hover{
   transform: rotate(90deg);
   color: #b91c1c;
+}
+
+#eventDetails {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 5px;
 }
 
 /******************************** EVENT CARD ********************************/
@@ -1078,22 +1143,22 @@ body {
 <div class="stats">
   <div class="stat-box">
     <p>Total Events</p>
-    <h2>0</h2>
+    <h2><?= $total_events ?></h2>
   </div>
 
   <div class="stat-box">
-    <p>Upcoming</p>
-    <h2>0</h2>
+    <p>Scheduled Events</p>
+    <h2><?= $upcoming ?></h2>
   </div>
 
   <div class="stat-box">
     <p>Completed</p>
-    <h2>0</h2>
+    <h2><?= $completed ?></h2>
   </div>
 
   <div class="stat-box">
     <p>Total Sales</p>
-    <h2>0</h2>
+    <h2>₱ <?= number_format($total_sales, 2) ?></h2>
   </div>
 </div>
 
@@ -1149,18 +1214,43 @@ body {
 <!--------------------------------------- TABLE BODY ---------------------------------------------> 
       <div class="table-body" id="eventTable">
 
-        <div class="table-row">
-          <span><strong>Coffee Booth Event</strong></span>
-          <span>coffee@email.com</span>
-          <span>09171234567</span>
-          <span>50</span>
-          <span>Imus</span>
-          <span><strong>₱8,500</strong></span>
-
-          <div class="actions">
-            <button><i class="fa-solid fa-trash"></i></button>
-          </div>
-        </div>
+        <?php if (!empty($events)): ?>
+            <?php foreach ($events as $index => $event): ?>
+                <?php
+                    // Ayusin ang itsura ng lokasyon
+                    $full_location = htmlspecialchars($event['city']) . ", " . htmlspecialchars($event['province']);
+                    // Ayusin ang status
+                    $today = date('Y-m-d');
+                    if ($event['event_date'] < $today) {
+                        $status = 'Completed';
+                        $status_class = 'status-completed';
+                    } elseif ($event['status'] === 'Confirmed') {
+                        $status = 'Upcoming';
+                        $status_class = 'status-upcoming';
+                    } else {
+                        $status = $event['status'];
+                        $status_class = $event['status'] === 'Pending' ? 'status-pending' : 'status-cancelled';
+                    }
+                ?>
+                <div class="table-row" data-search="<?= strtolower(htmlspecialchars($event['full_name'] . ' ' . $event['service_type'] . ' ' . $event['city'])) ?>">
+                    <span><strong><?= htmlspecialchars($event['full_name']) ?></strong><br>
+                        <small style="color:#666; font-size:11px;"><?= htmlspecialchars($event['service_type']) ?></small>
+                    </span>
+                    <span><?= htmlspecialchars($event['email']) ?></span>
+                    <span><?= htmlspecialchars($event['contact_number']) ?></span>
+                    <span><?= htmlspecialchars($event['guest_count']) ?></span>
+                    <span><?= htmlspecialchars($full_location) ?></span>
+                    <span><strong>₱ <?= number_format($event['total_amount'], 2) ?></strong></span>
+                    <span class="actions">
+                        <button onclick="viewEvent(<?= $index ?>)" class="view-btn">View Details</button>
+                    </span>
+                </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <div class="table-row" style="grid-template-columns: 1fr; text-align:center; padding:30px; color:#666;">
+                No events found.
+            </div>
+        <?php endif; ?>
 
       </div>
 
@@ -1234,7 +1324,7 @@ body {
 </body>
 </html>
 <script>
-
+const eventsData = <?= json_encode($events) ?>;
 /******************************** MENU BUTTON ********************************/
     const sidebarButtons = document.querySelectorAll('.sidebar .menu button');
 
@@ -1341,82 +1431,48 @@ loadStaff();
 updateTodayDate();
 
 /******************************** RENDER EVENTS  ********************************/
-const events = [
-{
-event:"Coffee Booth Event",
-client:"Juan Dela Cruz",
-email:"juan@gmail.com",
-contact:"09171234567",
-guests:50,
-location:"Imus",
-date:"May 10, 2026",
-status:"Upcoming",
-paymentStatus:"Partial",
-total:8500,
-paid:3000,
-services:["Coffee Booth","Matcha Booth"],
-staff:{
-  Barista: "",
-  Artist: "",
-  Cashier: ""
-},
-notes:"Outdoor setup"
-}
-];
+const events = eventsData;
 
 /******************************** RENDER EVENTS ********************************/
 function renderEvents(){
-  const container = document.getElementById("eventTable");
-    container.innerHTML = "";
-
-  let total=0, upcoming=0, completed=0, revenue=0;
-
-    events.forEach((e) => {
-    total++;
-    revenue += e.total;
-
-    if(e.status==="Upcoming") upcoming++;
-    if(e.status==="Completed") completed++;
-
-    container.innerHTML += `
-    <div class="table-row">
-      <span><strong>${e.event}</strong></span>
-      <span>${e.email}</span>
-      <span>${e.contact}</span>
-      <span>${e.guests}</span>
-      <span>${e.location}</span>
-      <span><strong>₱${e.total}</strong></span>
-
-      <span class="actions">
-        <button onclick="viewEvent(${events.indexOf(e)})" class="view-btn">
-          View Details
-        </button>
-      </span>
-    </div>
-    `;
-  });
-
-  document.querySelectorAll(".stat-box h2")[0].innerText = total;
-  document.querySelectorAll(".stat-box h2")[1].innerText = upcoming;
-  document.querySelectorAll(".stat-box h2")[2].innerText = completed;
-  document.querySelectorAll(".stat-box h2")[3].innerText = "₱" + revenue;
+  // Wala nang kailangang gawin dito dahil ang laman ng table ay direktang galing na sa PHP
+  // Ang mga numero sa itaas ay kinukuwenta na rin sa PHP
 }
 
 function viewEvent(i){
-  const e = events[i];
+  const e = eventsData[i]; // Kukunin mula sa totoong datos
+
+  // Kuwentahin ang halaga
+  const reservation_fee = e.service_type === "Tattoo Event" ? 0 : 2000;
+  const amount_paid = e.payment_type === "Full Payment" ? e.total_amount : reservation_fee;
+  const remaining_balance = e.total_amount - amount_paid;
+
+  // Ayusin ang status
+  const today = new Date().toISOString().split('T')[0];
+  let status, statusClass;
+  if (e.event_date < today) {
+      status = "Completed";
+      statusClass = "status-completed";
+  } else if (e.status === "Confirmed") {
+      status = "Upcoming";
+      statusClass = "status-upcoming";
+  } else {
+      status = e.status;
+      statusClass = e.status === "Pending" ? "status-pending" : "status-cancelled";
+  }
 
   document.getElementById("eventDetails").innerHTML = `
   <div class="event-detail-card">
 
     <div class="detail-header">
       <h2>Event Details</h2>
-      <span class="status-badge">${e.status}</span>
+      <span class="status-badge ${statusClass}">${status}</span>
     </div>
 
     <div class="detail-grid">
       <div class="detail-item">
         <label>Client</label>
-        <p>${e.client}</p>
+        <p>${e.full_name}</p>
       </div>
 
       <div class="detail-item">
@@ -1426,95 +1482,60 @@ function viewEvent(i){
 
       <div class="detail-item">
         <label>Contact</label>
-        <p>${e.contact}</p>
+        <p>${e.contact_number}</p>
       </div>
 
       <div class="detail-item">
-        <label>Date</label>
-        <p>${e.date}</p>
+        <label>Date & Time</label>
+        <p>${new Date(e.event_date).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })} at ${e.event_time}</p>
       </div>
 
       <div class="detail-item">
         <label>Guests</label>
-        <p>${e.guests}</p>
+        <p>${e.guest_count}</p>
       </div>
 
       <div class="detail-item">
         <label>Location</label>
-        <p>${e.location}</p>
+        <p>${e.street_address}, ${e.barangay}, ${e.city}, ${e.province}</p>
       </div>
     </div>
 
     <div class="section-box">
       <h3>Service</h3>
-      <span class="tag">${e.services[0]}</span>
-    </div>
-
-<div class="section-box">
-  <h3>Payment Summary</h3>
-
-  <div class="payment-grid">
-
-    <div>
-      <span>Package Price</span>
-      <strong>
-        ₱${(() => {
-          const service = e.services[0];
-
-          const packages = {
-            "Coffee Booth": 5000,
-            "Matcha Booth": 9000,
-            "Tattoo Event": 1000
-          };
-
-          return packages[service] || 0;
-        })()}
-      </strong>
-    </div>
-
-    <div>
-      <span>Reservation Fee</span>
-      <strong>₱2000</strong>
-    </div>
-
-    <div>
-      <span>Balance</span>
-      <strong class="danger">
-        ₱${(() => {
-          const service = e.services[0];
-
-          const packages = {
-            "Coffee Booth": 5000,
-            "Matcha Booth": 9000,
-            "Tattoo Event": 1000
-          };
-
-          const packagePrice = packages[service] || 0;
-          const reservationFee = 2000;
-
-          return packagePrice - reservationFee;
-        })()}
-      </strong>
-    </div>
-
-  </div>
-
-  <div class="payment-status">
-    <span class="badge">${e.paymentStatus}</span>
-  </div>
-
-</div>
-
-    <div class="section-box">
-      <h3>Assigned Staff</h3>
-      <p>Barista: ${e.staff.Barista || "-"}</p>
-      <p>Artist: ${e.staff.Artist || "-"}</p>
-      <p>Cashier: ${e.staff.Cashier || "-"}</p>
+      <span class="tag">${e.service_type}</span>
     </div>
 
     <div class="section-box">
-      <h3>Notes</h3>
-      <p>${e.notes}</p>
+      <h3>Payment Summary</h3>
+      <div class="payment-grid">
+        <div>
+          <span>Package Price</span>
+          <strong>₱ ${Number(e.total_amount).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</strong>
+        </div>
+        <div>
+          <span>Amount Paid</span>
+          <strong>₱ ${Number(amount_paid).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</strong>
+        </div>
+        <div>
+          <span>Remaining Balance</span>
+          <strong class="danger">₱ ${Number(remaining_balance).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</strong>
+        </div>
+      </div>
+      <div class="payment-status">
+        <span class="badge">${e.payment_type}</span>
+      </div>
+    </div>
+
+    <div class="section-box">
+      <h3>Reference / Method</h3>
+      <p>Reference: ${e.payment_reference || 'N/A'}</p>
+      <p>Payment Method: ${e.payment_method}</p>
+    </div>
+
+    <div class="section-box">
+      <h3>Additional Notes</h3>
+      <p>${e.additional_notes || 'None'}</p>
     </div>
 
   </div>
@@ -1786,55 +1807,5 @@ function closeStaffModal(){
   document.getElementById("staffModal").style.display = "none";
 }
 
-function sortEvents() {
-  const value = document.getElementById("sortSelect").value;
 
-  let sorted = [...events];
-
-  if (value === "high") {
-    sorted.sort((a, b) => b.total - a.total);
-  } 
-  else if (value === "low") {
-    sorted.sort((a, b) => a.total - b.total);
-  }
-
-  renderEventsSorted(sorted);
-}
-
-function renderEventsSorted(data) {
-  const container = document.getElementById("eventTable");
-  container.innerHTML = "";
-
-  let total = 0, upcoming = 0, completed = 0, revenue = 0;
-
-  data.forEach((e, i) => {
-    total++;
-    revenue += Number(e.total || 0);
-
-    if (e.status === "Upcoming") upcoming++;
-    if (e.status === "Completed") completed++;
-
-    container.innerHTML += `
-      <div class="table-row">
-        <span><strong>${e.event}</strong></span>
-        <span>${e.email}</span>
-        <span>${e.contact}</span>
-        <span>${e.guests}</span>
-        <span>${e.location}</span>
-        <span><strong>₱${e.total}</strong></span>
-
-        <span class="actions">
-          <button onclick="viewEvent(${i})" class="view-btn">
-            View Details
-          </button>
-        </span>
-      </div>
-    `;
-  });
-
-  document.querySelectorAll(".stat-box h2")[0].innerText = total;
-  document.querySelectorAll(".stat-box h2")[1].innerText = upcoming;
-  document.querySelectorAll(".stat-box h2")[2].innerText = completed;
-  document.querySelectorAll(".stat-box h2")[3].innerText = "₱" + revenue;
-}
 </script>
