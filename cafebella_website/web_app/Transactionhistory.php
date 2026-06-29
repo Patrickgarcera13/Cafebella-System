@@ -1,8 +1,96 @@
 <?php
+// Simulan ang session at i-check kung naka-login
 if (session_status() == PHP_SESSION_NONE) {
+    session_start();
 }
 require_once '../website_php/auth_check.php';
-// ... rest of your code
+require_once '../website_php/database.php';
+
+// Kunin ang filter mula sa URL, default ay 'all'
+$filter = isset($_GET['filter']) ? $_GET['filter'] : 'all';
+
+// --- Kumuha ng datos base sa filter ---
+try {
+    if ($filter === 'pos') {
+    $sql = "SELECT 
+                receipt_code, 
+                order_date AS created_at, 
+                '' AS full_name, 
+                order_type AS service_type, 
+                payment_method, 
+                total_amount, 
+                status,
+                order_id, -- ✅ Idinagdag
+                'POS' AS source
+            FROM orders 
+            ORDER BY order_date DESC";
+} elseif ($filter === 'online') {
+    $sql = "SELECT 
+                receipt_code, 
+                created_at, 
+                full_name, 
+                service_type, 
+                payment_method, 
+                total_amount, 
+                status,
+                NULL AS order_id, -- ✅ Idinagdag para tugma sa UNION
+                'ONLINE_BOOKING' AS source
+            FROM bookings 
+            ORDER BY created_at DESC";
+} else {
+    $sql = "SELECT 
+                receipt_code, 
+                created_at, 
+                full_name, 
+                service_type, 
+                payment_method, 
+                total_amount, 
+                status,
+                NULL AS order_id, -- ✅ Idinagdag
+                'ONLINE_BOOKING' AS source
+            FROM bookings
+
+            UNION ALL
+
+            SELECT 
+                receipt_code, 
+                order_date AS created_at, 
+                '' AS full_name, 
+                order_type AS service_type, 
+                payment_method, 
+                total_amount, 
+                status,
+                order_id, -- ✅ Idinagdag
+                'POS' AS source
+            FROM orders
+
+            ORDER BY created_at DESC";
+}
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute();
+    $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    date_default_timezone_set('Asia/Manila'); // ✅ Itinakda ang tamang oras para sa buong pahina
+$totalTransactions = count($transactions);
+$totalSales = 0;
+$todaySales = 0;
+$today = date('Y-m-d');
+
+foreach ($transactions as $trx) {
+    $totalSales += $trx['total_amount'];
+
+    // ✅ Simple at siguradong pagbabasa ng petsa
+    $txnDate = date('Y-m-d', strtotime($trx['created_at']));
+
+    if ($txnDate === $today) {
+        $todaySales += $trx['total_amount'];
+    }
+}
+
+} catch (PDOException $e) {
+    die("Error: " . $e->getMessage());
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -723,17 +811,35 @@ body {
 <!--------------------------------------- MENU SIDEBAR ---------------------------------------------> 
     <div class="menu">
       <button data-page="Dashboard.php"><img src="IMAGES/dashboardpic.png" class="icon">Dashboard</button>
+
+      <?php if(isAdmin()): ?>
       <button data-page="Calendar.php"><img src="IMAGES/calendaricon.png" class="icon">Calendar</button>
+      <?php endif; ?>
+
       <button data-page="POS.php"><img src="IMAGES/POSicon.png" class="icon">Point of Sale</button>
       <button data-page="Transactionhistory.php"><img src="IMAGES/transactionhistoryicon.png" class="icon">Transaction History</button>
-      <button data-page="Reports.php"><img src="IMAGES/reporticon.png" class="icon">Reports</button>
-      <button data-page="Bookingrequest.php"><img src="IMAGES/Bookingicon.png" class="icon">Booking Request</button>
-      <button data-page="Eventmanagement.php"><img src="IMAGES/eventmanagementicon.png" class="icon">Event Management</button>
-      <button data-page="Inventory.php"><img src="IMAGES/inventoryicon.png" class="icon">Inventory</button>
-      <button data-page="Feedback.php"><img src="IMAGES/feedbackicon.png" class="icon">Customer Feedback</button>
+      
       <?php if(isAdmin()): ?>
-<button data-page="Settings.php"><img src="IMAGES/settingsicon.png" class="icon">Settings</button>
-<?php endif; ?>
+      <button data-page="Reports.php"><img src="IMAGES/reporticon.png" class="icon">Reports</button>
+      <?php endif; ?>
+      
+      <?php if(isAdmin()): ?>
+      <button data-page="Bookingrequest.php"><img src="IMAGES/Bookingicon.png" class="icon">Booking Request</button>
+      <?php endif; ?>
+
+      <?php if(isAdmin()): ?>
+      <button data-page="Eventmanagement.php"><img src="IMAGES/eventmanagementicon.png" class="icon">Event Management</button>
+      <?php endif; ?>
+      
+      <button data-page="Inventory.php"><img src="IMAGES/inventoryicon.png" class="icon">Inventory</button>
+      
+      <?php if(isAdmin()): ?>
+      <button data-page="Feedback.php"><img src="IMAGES/feedbackicon.png" class="icon">Customer Feedback</button>
+      <?php endif; ?>
+
+      <?php if(isAdmin()): ?>
+      <button data-page="Settings.php"><img src="IMAGES/settingsicon.png" class="icon">Settings</button>
+      <?php endif; ?>
     </div>
     </div> 
 
@@ -788,17 +894,17 @@ body {
 
       <div class="kpi-card">
         <span class="kpi-label">Total Transactions</span>
-        <h2 class="kpi-value" id="totalTx">0</h2>
+        <h2 class="kpi-value"><?= $totalTransactions ?></h2>
       </div>
 
       <div class="kpi-card">
         <span class="kpi-label">Total Sales</span>
-        <h2 class="kpi-value" id="totalSales">₱0.00</h2>
+        <h2 class="kpi-value">₱ <?= number_format($totalSales, 2) ?></h2>
       </div>
 
       <div class="kpi-card">
         <span class="kpi-label">Today's Sales</span>
-        <h2 class="kpi-value" id="todaySales">₱0.00</h2>
+        <h2 class="kpi-value">₱ <?= number_format($todaySales, 2) ?></h2>
       </div>
 
     </div>
@@ -810,11 +916,11 @@ body {
 <div class="filter-bar">
 
     <!-- LEFT SIDE -->
-    <div class="source-buttons">
-        <button class="src active" onclick="setSource('all', this)">ALL</button>
-        <button class="src" onclick="setSource('POS', this)">POS</button>
-        <button class="src" onclick="setSource('ONLINE_BOOKING', this)">ONLINE BOOKING</button>
-    </div>
+  <div class="source-buttons">
+    <button class="src <?= $filter === 'all' ? 'active' : '' ?>" onclick="window.location.href='?filter=all'">ALL</button>
+    <button class="src <?= $filter === 'pos' ? 'active' : '' ?>" onclick="window.location.href='?filter=pos'">POS</button>
+    <button class="src <?= $filter === 'online' ? 'active' : '' ?>" onclick="window.location.href='?filter=online'">ONLINE BOOKING</button>
+  </div>
 
 </div> <!-- ✅ IMPORTANT CLOSING TAG -->
 
@@ -836,148 +942,44 @@ body {
     </thead>
 
     <tbody>
+        <?php if (!empty($transactions)): ?>
+            <?php foreach ($transactions as $trx): ?>
+    <?php
+    // ✅ Itinakda kung saan galing ang transaksyon
+    $source = $trx['source'] ?? 'ONLINE_BOOKING';
 
-      <!-- ================= POS TRANSACTIONS ================= -->
+    // ✅ Iba ang display ng pangalan depende sa source
+    if ($source === 'POS') {
+        $source_name = 'POS / ' . $trx['service_type'];
+        $customer_name = 'Walk-in';
+    } else {
+        $source_name = $trx['service_type'] . " Booking";
+        $customer_name = $trx['full_name'];
+    }
 
-      <tr data-source="POS">
-        <td class="id">TXN-001</td>
-        <td>Apr 18, 2026 - 2:30 PM</td>
-        <td>Juan Dela Cruz</td>
-        <td><span class="badge pos">POS</span></td>
-        <td>GCash</td>
-        <td class="amount">₱180.00</td>
-        <td><span class="badge paid">Paid</span></td>
-        <td><button class="view-btn" onclick="viewTransaction(this)">View</button></td>
-      </tr>
-
-      <tr data-source="POS">
-        <td class="id">TXN-002</td>
-        <td>Apr 18, 2026 - 3:10 PM</td>
-        <td>Maria Santos</td>
-        <td><span class="badge pos">POS</span></td>
-        <td>Cash</td>
-        <td class="amount">₱250.00</td>
-        <td><span class="badge paid">Paid</span></td>
-        <td><button class="view-btn" onclick="viewTransaction(this)">View</button></td>
-      </tr>
-
-      <tr data-source="POS">
-        <td class="id">TXN-003</td>
-        <td>Apr 18, 2026 - 4:05 PM</td>
-        <td>Mark Reyes</td>
-        <td><span class="badge pos">POS</span></td>
-        <td>GCash</td>
-        <td class="amount">₱320.00</td>
-        <td><span class="badge pending">Pending</span></td>
-        <td><button class="view-btn" onclick="viewTransaction(this)">View</button></td>
-      </tr>
-
-      <!-- ================= ONLINE BOOKING: COFFEE ================= -->
-
-<tr data-source="ONLINE_BOOKING">
-        <td class="id">TXN-004</td>
-        <td>Apr 18, 2026 - 5:20 PM</td>
-        <td>Anna Lopez</td>
-        <td><span class="badge online">Coffee Booking</span></td>
-        <td>GCash</td>
-        <td class="amount">₱5,000</td>
-        <td><span class="badge paid">Paid</span></td>
-        <td><button class="view-btn" onclick="viewTransaction(this)">View</button></td>
-      </tr>
-
-<tr data-source="ONLINE_BOOKING">
-        <td class="id">TXN-005</td>
-        <td>Apr 18, 2026 - 6:00 PM</td>
-        <td>Kevin Cruz</td>
-        <td><span class="badge online">Coffee Booking</span></td>
-        <td>Cash</td>
-        <td class="amount">₱5,000</td>
-        <td><span class="badge pending">Pending</span></td>
-        <td><button class="view-btn" onclick="viewTransaction(this)">View</button></td>
-      </tr>
-
-<tr data-source="ONLINE_BOOKING">
-        <td class="id">TXN-006</td>
-        <td>Apr 18, 2026 - 6:45 PM</td>
-        <td>Sarah Lim</td>
-        <td><span class="badge online">Coffee Booking</span></td>
-        <td>GCash</td>
-        <td class="amount">₱5,000</td>
-        <td><span class="badge paid">Paid</span></td>
-        <td><button class="view-btn" onclick="viewTransaction(this)">View</button></td>
-      </tr>
-
-      <!-- ================= ONLINE BOOKING: MATCHA ================= -->
-
-<tr data-source="ONLINE_BOOKING">
-        <td class="id">TXN-007</td>
-        <td>Apr 18, 2026 - 7:10 PM</td>
-        <td>Yuki Tan</td>
-        <td><span class="badge online">Matcha Booking</span></td>
-        <td>GCash</td>
-        <td class="amount">₱9,000</td>
-        <td><span class="badge paid">Paid</span></td>
-        <td><button class="view-btn" onclick="viewTransaction(this)">View</button></td>
-      </tr>
-
-<tr data-source="ONLINE_BOOKING">
-        <td class="id">TXN-008</td>
-        <td>Apr 18, 2026 - 7:40 PM</td>
-        <td>Nicole Garcia</td>
-        <td><span class="badge online">Matcha Booking</span></td>
-        <td>Cash</td>
-        <td class="amount">₱9,000</td>
-        <td><span class="badge pending">Pending</span></td>
-        <td><button class="view-btn" onclick="viewTransaction(this)">View</button></td>
-      </tr>
-
-<tr data-source="ONLINE_BOOKING">
-        <td class="id">TXN-009</td>
-        <td>Apr 18, 2026 - 8:15 PM</td>
-        <td>James Park</td>
-        <td><span class="badge online">Matcha Booking</span></td>
-        <td>GCash</td>
-        <td class="amount">₱9,000</td>
-        <td><span class="badge paid">Paid</span></td>
-        <td><button class="view-btn" onclick="viewTransaction(this)">View</button></td>
-      </tr>
-
-      <!-- ================= ONLINE BOOKING: TATTOO ================= -->
-
-<tr data-source="ONLINE_BOOKING">
-        <td class="id">TXN-010</td>
-        <td>Apr 18, 2026 - 9:00 PM</td>
-        <td>Daniel Rivera</td>
-        <td><span class="badge online">Tattoo Booking</span></td>
-        <td>GCash</td>
-        <td class="amount">₱1,000</td>
-        <td><span class="badge pending">Pending</span></td>
-        <td><button class="view-btn" onclick="viewTransaction(this)">View</button></td>
-      </tr>
-
-<tr data-source="ONLINE_BOOKING">
-        <td class="id">TXN-011</td>
-        <td>Apr 18, 2026 - 9:30 PM</td>
-        <td>Michael Tan</td>
-        <td><span class="badge online">Tattoo Booking</span></td>
-        <td>Cash</td>
-        <td class="amount">₱1,000</td>
-        <td><span class="badge paid">Paid</span></td>
-        <td><button class="view-btn" onclick="viewTransaction(this)">View</button></td>
-      </tr>
-
-<tr data-source="ONLINE_BOOKING">
-        <td class="id">TXN-012</td>
-        <td>Apr 18, 2026 - 10:10 PM</td>
-        <td>Chris Gomez</td>
-        <td><span class="badge online">Tattoo Booking</span></td>
-        <td>GCash</td>
-        <td class="amount">₱1,000</td>
-        <td><span class="badge cancelled">Cancelled</span></td>
-        <td><button class="view-btn" onclick="viewTransaction(this)">View</button></td>
-      </tr>
-
-    </tbody>
+    $status_badge = match($trx['status']) {
+        'Completed', 'Confirmed' => '<span class="badge paid">'.htmlspecialchars($trx['status']).'</span>',
+        'Pending' => '<span class="badge pending">Pending</span>',
+        default => '<span class="badge cancelled">'.htmlspecialchars($trx['status']).'</span>'
+    };
+    ?>
+    <tr data-source="<?= $source ?>">
+        <td class="id"><?= htmlspecialchars($trx['receipt_code']) ?></td>
+        <td><?= date("M d, Y - g:i A", strtotime($trx['created_at'])) ?></td>
+        <td><?= htmlspecialchars($customer_name) ?></td>
+        <td><span class="badge <?= strtolower($source) ?>"><?= htmlspecialchars($source_name) ?></span></td>
+        <td><?= htmlspecialchars($trx['payment_method']) ?></td>
+        <td class="amount">₱ <?= number_format($trx['total_amount'], 2) ?></td>
+        <td><?= $status_badge ?></td>
+        <td><button class="view-btn" onclick="viewTransaction(this, <?= $source === 'POS' ? 'true' : 'false' ?>, <?= $trx['order_id'] ?? 0 ?>)">View</button></td>
+    </tr>
+<?php endforeach; ?>
+        <?php else: ?>
+            <tr>
+                <td colspan="8" style="text-align:center; padding:2rem; color:#666;">No transactions found.</td>
+            </tr>
+        <?php endif; ?>
+      </tbody>
 
   </table>
 
@@ -1167,56 +1169,118 @@ function setSource(type, btn) {
 }
 
 /******************************** VIEW TRANSACTION ********************************/
-function viewTransaction(btn) {
+function viewTransaction(btn, isPOS = false, orderId = 0) {
   const row = btn.closest("tr");
   const cells = row.querySelectorAll("td");
+  const status = cells[6].innerText.toLowerCase();
 
-const status = cells[6].innerText.toLowerCase();
+  // ✅ Kung POS order, kukunin ang mga detalye mula sa server
+  if (isPOS && orderId > 0) {
+      document.getElementById("modalBody").innerHTML = '<p style="text-align:center; padding:2rem;">Loading details...</p>';
+      document.getElementById("viewModal").style.display = "flex";
 
-const html = `
-  <div class="txn-card">
+      fetch('../website_php/api.php?action=getTransactionDetails&order_id=' + orderId)
+          .then(res => res.json())
+          .then(data => {
+              if (data.status === 'success') {
+                  const order = data.order;
+                  const items = data.items;
 
-    <div class="txn-header">
-      <div>
-        <h2>Transaction Details</h2>
-        <span class="txn-id">${cells[0].innerText}</span>
+                  let itemsHtml = '';
+                  items.forEach(item => {
+                      itemsHtml += `
+                      <tr>
+                          <td>${item.product_name} ${item.variant_name ? `(${item.variant_name})` : ''}</td>
+                          <td>${item.quantity}</td>
+                          <td>₱${parseFloat(item.unit_price).toFixed(2)}</td>
+                          <td>₱${parseFloat(item.subtotal).toFixed(2)}</td>
+                      </tr>`;
+                  });
+
+                  const html = `
+                  <div class="txn-card">
+                    <div class="txn-header">
+                      <div>
+                        <h2>POS Order Details</h2>
+                        <span class="txn-id">${order.receipt_code}</span>
+                      </div>
+                      <div class="txn-status ${order.status.toLowerCase()}">
+                        ${order.status}
+                      </div>
+                    </div>
+
+                    <div class="txn-grid">
+                      <div class="txn-item"><span class="label">Date</span><span class="value">${new Date(order.order_date).toLocaleString()}</span></div>
+                      <div class="txn-item"><span class="label">Type</span><span class="value">${order.order_type}</span></div>
+                      <div class="txn-item"><span class="label">Payment</span><span class="value">${order.payment_method}</span></div>
+                      <div class="txn-item"><span class="label">Discount</span><span class="value">${order.discount_percent > 0 ? order.discount_percent + '%' : 'None'}</span></div>
+                    </div>
+
+                    <h4 style="margin:1rem 0 0.5rem;">Items Ordered</h4>
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:1rem;">
+                      <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead>
+                      <tbody>${itemsHtml}</tbody>
+                    </table>
+
+                    <div class="txn-total">
+                      <div style="display:flex; justify-content:space-between; margin:0.3rem 0;">
+                        <span>Subtotal</span><span>₱${parseFloat(order.subtotal).toFixed(2)}</span>
+                      </div>
+                      ${order.discount_amount > 0 ? `
+                      <div style="display:flex; justify-content:space-between; margin:0.3rem 0;">
+                        <span>Discount</span><span>-₱${parseFloat(order.discount_amount).toFixed(2)}</span>
+                      </div>` : ''}
+                      <div style="display:flex; justify-content:space-between; margin:0.3rem 0; font-weight:bold; font-size:1.1rem;">
+                        <span>Total</span><span>₱${parseFloat(order.total_amount).toFixed(2)}</span>
+                      </div>
+                      ${order.payment_method === 'Cash' ? `
+                      <div style="display:flex; justify-content:space-between; margin:0.3rem 0;">
+                        <span>Amount Received</span><span>₱${parseFloat(order.amount_received).toFixed(2)}</span>
+                      </div>
+                      <div style="display:flex; justify-content:space-between; margin:0.3rem 0;">
+                        <span>Change</span><span>₱${parseFloat(order.change_amount).toFixed(2)}</span>
+                      </div>` : ''}
+                    </div>
+                  </div>`;
+
+                  document.getElementById("modalBody").innerHTML = html;
+              } else {
+                  document.getElementById("modalBody").innerHTML = '<p style="color:red;">Error loading details.</p>';
+              }
+          })
+          .catch(err => {
+              document.getElementById("modalBody").innerHTML = '<p style="color:red;">Connection error.</p>';
+          });
+
+      return;
+  }
+
+  // ✅ Para sa Online Booking (gaya ng dati)
+  const html = `
+    <div class="txn-card">
+      <div class="txn-header">
+        <div>
+          <h2>Transaction Details</h2>
+          <span class="txn-id">${cells[0].innerText}</span>
+        </div>
+        <div class="txn-status ${status}">
+          ${cells[6].innerText}
+        </div>
       </div>
-      <div class="txn-status ${status}">
-        ${cells[6].innerText}
+
+      <div class="txn-grid">
+        <div class="txn-item"><span class="label">Date</span><span class="value">${cells[1].innerText}</span></div>
+        <div class="txn-item"><span class="label">Customer</span><span class="value">${cells[2].innerText}</span></div>
+        <div class="txn-item"><span class="label">Source</span><span class="value">${cells[3].innerText}</span></div>
+        <div class="txn-item"><span class="label">Payment</span><span class="value">${cells[4].innerText}</span></div>
+      </div>
+
+      <div class="txn-total">
+        <span>Total</span>
+        <h1>${cells[5].innerText}</h1>
       </div>
     </div>
-
-    <div class="txn-grid">
-
-      <div class="txn-item">
-        <span class="label">Date</span>
-        <span class="value">${cells[1].innerText}</span>
-      </div>
-
-      <div class="txn-item">
-        <span class="label">Customer</span>
-        <span class="value">${cells[2].innerText}</span>
-      </div>
-
-      <div class="txn-item">
-        <span class="label">Source</span>
-        <span class="value">${cells[3].innerText}</span>
-      </div>
-
-      <div class="txn-item">
-        <span class="label">Payment</span>
-        <span class="value">${cells[4].innerText}</span>
-      </div>
-
-    </div>
-
-    <div class="txn-total">
-      <span>Total</span>
-      <h1>${cells[5].innerText}</h1>
-    </div>
-
-  </div>
-`;
+  `;
 
   document.getElementById("modalBody").innerHTML = html;
   document.getElementById("viewModal").style.display = "flex";
