@@ -2,8 +2,32 @@
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-require_once '../website_php/auth_check.php'; 
-// ... rest of your code
+require_once '../website_php/auth_check.php';
+require_once '../website_php/database.php';
+date_default_timezone_set('Asia/Manila');
+$today = date('Y-m-d');
+
+// Total Bookings
+$stmt = $pdo->query("SELECT COUNT(*) FROM bookings");
+$total_bookings = $stmt->fetchColumn();
+
+// Pending Requests
+$stmt = $pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'Pending'");
+$pending_requests = $stmt->fetchColumn();
+
+// Scheduled Events
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM bookings WHERE status = 'Confirmed' AND event_date >= ?");
+$stmt->execute([$today]);
+$scheduled_events = $stmt->fetchColumn();
+
+// ✅ Low Stock (galing sa inventory table)
+$stmt = $pdo->query("SELECT COUNT(*) FROM inventory WHERE stock <= reorder_level");
+$low_stock = $stmt->fetchColumn();
+
+// Sales Today
+$stmt = $pdo->prepare("SELECT COALESCE(SUM(total_amount), 0) FROM bookings WHERE DATE(created_at) = ?");
+$stmt->execute([$today]);
+$sales_today = $stmt->fetchColumn();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -324,43 +348,64 @@ body {
 .stats {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 20px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 24px;
+  align-items: stretch;
+  width: 100%;
 }
 
 .stat-card {
   background: #ffffff;
-  padding: 18px;
-  border-radius: 14px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-  border: 1px solid #f0f0f0;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: none;
+  border-bottom: 3px solid #4CAF50;
   position: relative;
-}
-.stat-card i {
-  font-size: 18px;
-  color: #2e7d32;
-  margin-bottom: 10px;
-}
-.stat-card div:first-of-type {
-  font-size: 13px;
-  color: #777;
-}
-.stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #114500;
-}
-.stat-card::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  background: #66bb6a;
-  border-radius: 0 0 14px 14px;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
 }
 
+.stat-card i {
+  font-size: 20px;
+  color: #2e7d32;
+  margin-bottom: 8px;
+}
+
+.stat-card div:first-of-type {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #114500;
+  line-height: 1.2;
+  /* This makes it shrink automatically if too long */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Remove the extra bottom border that was conflicting */
+.stat-card::after {
+  display: none;
+}
+
+.dashboard {
+  /* add this */
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  width: 100%;
+}
 /******************************** CHARTS ********************************/
 .charts {
   display: grid;
@@ -604,18 +649,38 @@ body {
 <!--------------------------------------- MENU SIDEBAR ---------------------------------------------> 
     <div class="menu">
       <button data-page="Dashboard.php"><img src="IMAGES/dashboardpic.png" class="icon">Dashboard</button>
+
+      <?php if(isAdmin()): ?>
       <button data-page="Calendar.php"><img src="IMAGES/calendaricon.png" class="icon">Calendar</button>
+      <?php endif; ?>
+
       <button data-page="POS.php"><img src="IMAGES/POSicon.png" class="icon">Point of Sale</button>
       <button data-page="Transactionhistory.php"><img src="IMAGES/transactionhistoryicon.png" class="icon">Transaction History</button>
-      <button data-page="Reports.php"><img src="IMAGES/reporticon.png" class="icon">Reports</button>
-      <button data-page="Bookingrequest.php"><img src="IMAGES/Bookingicon.png" class="icon">Booking Request</button>
-      <button data-page="Eventmanagement.php"><img src="IMAGES/eventmanagementicon.png" class="icon">Event Management</button>
-      <button data-page="Inventory.php"><img src="IMAGES/inventoryicon.png" class="icon">Inventory</button>
-      <button data-page="Feedback.php"><img src="IMAGES/feedbackicon.png" class="icon">Customer Feedback</button>
+
       <?php if(isAdmin()): ?>
-<button data-page="Settings.php"><img src="IMAGES/settingsicon.png" class="icon">Settings</button>
-<?php endif; ?>
+      <button data-page="Reports.php"><img src="IMAGES/reporticon.png" class="icon">Reports</button>
+      <?php endif; ?>
+
+      <?php if(isAdmin()): ?>
+      <button data-page="Bookingrequest.php"><img src="IMAGES/Bookingicon.png" class="icon">Booking Request</button>
+      <?php endif; ?>
+
+      <?php if(isAdmin()): ?>
+      <button data-page="Eventmanagement.php"><img src="IMAGES/eventmanagementicon.png" class="icon">Event Management</button>
+      <?php endif; ?>
+
+      <button data-page="Inventory.php"><img src="IMAGES/inventoryicon.png" class="icon">Inventory</button>
+      
+      <?php if(isAdmin()): ?>
+      <button data-page="Feedback.php"><img src="IMAGES/feedbackicon.png" class="icon">Customer Feedback</button>
+      <?php endif; ?>
+
+      <?php if(isAdmin()): ?>
+        <button data-page="Settings.php"><img src="IMAGES/settingsicon.png" class="icon">Settings</button>
+      <?php endif; ?>
+
     </div>
+
     </div> 
 
 <!--------------------------------------- MAIN ---------------------------------------------> 
@@ -666,36 +731,35 @@ body {
   <div class="dashboard">
 
   <!-- STATS -->
-  <div class="stats">
-    <div class="stat-card">
-      <i class="fa-solid fa-calendar-check"></i>
-      <div>Total Bookings</div>
-      <div class="stat-value">25</div>
-    </div>
+  <div class="stat-card">
+  <i class="fa-solid fa-calendar-check"></i>
+  <div>Total Bookings</div>
+  <div class="stat-value"><?= $total_bookings ?></div>
+</div>
+
+<div class="stat-card">
+  <i class="fa-solid fa-clock"></i>
+  <div>Pending Requests</div>
+  <div class="stat-value"><?= $pending_requests ?></div>
+</div>
+
+<div class="stat-card">
+  <i class="fa-solid fa-calendar-day"></i>
+  <div>Scheduled Events</div>
+  <div class="stat-value"><?= $scheduled_events ?></div>
+</div>
 
     <div class="stat-card">
-      <i class="fa-solid fa-clock"></i>
-      <div>Pending Requests</div>
-      <div class="stat-value">3</div>
-    </div>
+  <i class="fa-solid fa-box"></i>
+  <div>Low Stock</div>
+  <div class="stat-value"><?= $low_stock ?></div>
+</div>
 
-    <div class="stat-card">
-      <i class="fa-solid fa-calendar-day"></i>
-      <div>Upcoming Events</div>
-      <div class="stat-value">5</div>
-    </div>
-
-    <div class="stat-card">
-      <i class="fa-solid fa-box"></i>
-      <div>Low Stock</div>
-      <div class="stat-value">2</div>
-    </div>
-
-    <div class="stat-card">
-      <i class="fa-solid fa-peso-sign"></i>
-      <div>Sales Today</div>
-      <div class="stat-value">₱12,500</div>
-    </div>
+   <div class="stat-card">
+  <i class="fa-solid fa-peso-sign"></i>
+  <div>Sales Today</div>
+  <div class="stat-value">₱ <?= number_format($sales_today, 2) ?></div>
+</div>
   </div>
 
 <!-- MIDDLE -->
