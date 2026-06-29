@@ -1,1657 +1,193 @@
+<?php
+// Simulan ang session para mabasa ang datos
+session_start();
+
+// Kung walang datos, ibalik sa pahina ng pag-book
+if (!isset($_SESSION['booking_data']) || !isset($_SESSION['receipt_code'])) {
+    header("Location: Bookyourevent.html");
+    exit;
+}
+
+// Kunin ang lahat ng impormasyon
+$booking = $_SESSION['booking_data'];
+$receipt_code = $_SESSION['receipt_code'];
+
+// Ihanda ang mga halaga
+$reservation_fee = ($booking['service_type'] === "Tattoo Event") ? 0 : 2000;
+if ($booking['payment_type'] === "Full Payment") {
+    $amount_paid = $booking['total_amount'];
+    $remaining_balance = 0;
+} else {
+    $amount_paid = $reservation_fee;
+    $remaining_balance = $booking['total_amount'] - $reservation_fee;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Booking Receipt - Cafe Bella</title>
 
-<title>Book Your Event</title>
+<link href="https://fonts.googleapis.com/css2?family=Domine&display=swap" rel="stylesheet">
 
-<link href="https://fonts.googleapis.com/css2?family=Domine:wght@400;600&display=swap" rel="stylesheet">
+<!-- PDF LIBRARY -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
 body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background: linear-gradient(135deg, #f4f7f4 0%, #e8f5e9 40%, #fdfdfd 100%);
-  color: var(--text);
-  line-height: 1.6;
-}
-body::before {
-  content: "";
-  position: fixed;
-  top: -100px;
-  right: -100px;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(67,160,71,0.25), transparent);
-  z-index: -1;
-}
-
-body::after {
-  content: "";
-  position: fixed;
-  bottom: -120px;
-  left: -120px;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(27,94,32,0.2), transparent);
-  z-index: -1;
-}
-:root {
-  --primary: #1b5e20;
-  --primary-light: #2e7d32;
-  --accent: #43a047;
-  --bg: #f4f7f4;
-  --card: #ffffff;
-  --text: #1c2b1a;
-  --muted: #6b7a6a;
-  --border: rgba(27, 94, 32, 0.15);
-}
-/******************************** TOPBAR ********************************/
-.topbar {
-  background: #fff;
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 60px;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-
-.topbar-center {
-  flex: 1;
-  text-align: center;
-  font-size: 13px;
-}
-
-.topbar-right {
-  display: flex;
-  gap: 15px;
-}
-
-.topbar-right img {
-  width: 18px;
-}
-
-.book-link {
-  color: #114500;
-  font-weight: bold;
-  text-decoration: underline;
-}
-
-.book-link:hover {
-  color: #0a2f00;
-}
-
-/******************************** NAVBAR ********************************/
-.navbar {
-  background: #114500;
-  display: flex;
-  align-items: center;
-  padding: 15px 60px;
-  position: sticky;
-  top: 40px; /* height of topbar */
-  z-index: 999;
-}
-
-.nav-logo img {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-}
-
-.nav-menu {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  gap: 50px;
-  list-style: none;
-}
-
-.nav-menu a {
-  color: white;
-  text-decoration: none;
-}
-
-.nav-menu a::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -3px;
-  width: 0%;
-  height: 2px;
-  background: white;
-  transition: 0.3s;
-}
-
-.nav-menu a:hover::after {
-  width: 100%;
-}
-
-/******************************** SCROLL + RISE ********************************/
-.scroll-animate {
-  opacity: 0;
-  transform: translateY(50px);
-  transition: all 0.8s ease;
-}
-
-.scroll-animate.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/******************************** RISE ANIMATION ********************************/
-.rise-title,
-.rise-desc,
-.rise-item {
-  opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.rise-title.show,
-.rise-desc.show,
-.rise-item.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/******************************** CONTAINER ********************************/
-.container {
-  max-width: 820px;
-  margin: 70px auto 40px;
-  padding: 0 20px;
-  text-align: left; /* 🔥 important fix */
-}
-.container h1 {
-  font-size: 40px;
-  font-weight: 700;
-  letter-spacing: -0.8px;
-  color: #114500;
-  margin-bottom: 6px;
-}
-.container::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(255,255,255,0.6);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.05);
-  z-index: -1;
-}
-
-
-.subtitle {
-  font-size: 15px;
-  color: #6b7a6a;
-  max-width: 520px;
-  line-height: 1.6;
-  margin-bottom: 30px;
-}
-
-/******************************** CARD ********************************/
-.card {
-  backdrop-filter: blur(6px);
-  background: rgba(255,255,255,0.85);
-  border-radius: 16px;
-  padding: 30px;
-  border: 1px solid rgba(0,0,0,0.06);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.04);
-  margin-bottom: 25px;
-}
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 35px rgba(27,94,32,0.10);
-}
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 18px;
-  font-weight: 700;
-}
-.section-title::before {
-  content: "";
-  width: 4px;
-  height: 20px;
-  background: linear-gradient(180deg, #114500, #43a047);
-  border-radius: 5px;
-}
-/******************************** INPUTS (KEEP YOUR DESIGN) ********************************/
-input,
-select,
-textarea {
-  width: 100%;
-  padding: 14px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  background: #fafafa;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  background: #fff;
-  border-color: #114500;
-  box-shadow: 0 0 0 3px rgba(17,69,0,0.1);
-}
-label {
-  font-size: 14px;
-  display: block;
-  margin-bottom: 5px;
-}
-
-/******************************** SERVICES ********************************/
-.services {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-}
-
-.service-box {
-  padding: 20px;
-  border-radius: 16px;
-  border: 1px solid #e5e5e5;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  background: white;
-  position: relative;
-}
-.service-box:hover {
-  transform: translateY(-5px);
-  border-color: #114500;
-  box-shadow: 0 10px 25px rgba(17,69,0,0.15);
-}
-.service-box.active {
-  border: 2px solid #114500;
-  background: #f3faf3;
-}
-.service-title {
-  font-size: 16px;
-  margin-bottom: 10px;
-}
-
-.price {
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.total {
-  margin-top: 20px;
-  padding: 15px;
-  border-radius: 12px;
-  background: #f6f9f6;
-  text-align: center;
-  font-weight: 600;
-  color: #114500;
-}
-/******************************** NEW BOOKING FORM STYLE ********************************/
-
-.booking-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-.booking-wrapper {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: 30px;
-}
-.form-group {
-  margin-bottom: 18px;
-  flex: 1;
-}
-.form-group label {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f3d1f;
-  margin-bottom: 10px;
-  display: block;
-}
-
-.form-group input,
-.form-group select {
-  border-radius: 14px;
-  transition: 0.2s ease;
-  margin-bottom: 5px;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-  transform: scale(1.02);
-  box-shadow: 0 0 0 3px rgba(17,69,0,0.15);
-}
-/* clean row layout */
-.form-row {
-  display: flex;
-  gap: 20px; /* space between columns */
-  flex: 1;
-}
-.booking-layout {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: 35px;
-}
-.calendar-panel {
-  background: #ffffff;
-  border: 1px solid rgba(17,69,0,0.15);
-  border-radius: 16px;
-  padding: 20px;
-}
-
-.calendar-header h3 {
-  font-size: 18px;
-  color: #114500;
-  margin-bottom: 5px;
-}
-
-.calendar-header p {
-  font-size: 12px;
-  color: #777;
-  margin-bottom: 15px;
-}
-.calendar-box {
-  background: linear-gradient(145deg, #ffffff, #f1f8f1);
-  padding: 20px;
-  border-radius: 18px;
-  border: 1px solid rgba(17,69,0,0.12);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-}
-
-.flatpickr-calendar {
-  border: none !important;
-  box-shadow: none !important;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-.flatpickr-day {
-  border-radius: 10px;
-  transition: 0.2s;
-}
-
-.flatpickr-day:hover {
-  background: #e8f5e9;
-}
-
-.flatpickr-day.selected {
-  background: #114500 !important;
-  color: #fff;
-}
-
-.flatpickr-day.today {
-  border: 1px solid #114500;
-}
-.details-box {
-  flex: 1.2;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.form-panel {
-  background: #ffffff;
-  border: 1px solid rgba(17,69,0,0.15);
-  border-radius: 16px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-.form-row {
-  display: flex;
-  gap: 15px;
-}
-
-.form-row .form-group {
-  flex: 1;
-}
-.field label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #114500;
-  margin-bottom: 5px;
-  display: block;
-}
-
-.field input,
-.field select {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(17,69,0,0.2);
-  font-size: 13px;
-  transition: 0.2s;
-}
-
-.field input:focus,
-.field select:focus {
-  border-color: #114500;
-  box-shadow: 0 0 0 3px rgba(17,69,0,0.12);
-  outline: none;
-}
-
-.grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-}
-
-/* RESPONSIVE */
-@media (max-width: 900px) {
-  .booking-wrapper {
-    grid-template-columns: 1fr;
-  }
-}
-/******************************** BOOKING BUTTON ********************************/
-
-.booking-title {
-  font-size: 20px;
-  margin-bottom: 15px;
-  color: #114500;
-  text-align: left;
-}
-.book-btn {
-  width: 100%;
-  max-width: 420px;
-  height: 62px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  margin: 30px auto 10px;
-  border: none;
-  border-radius: 18px;
-
-  background: linear-gradient(135deg, #114500, #2e7d32);
-  color: #ffffff;
-
-  font-family: 'Inter', sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-
-  box-shadow: 0 12px 30px rgba(17, 69, 0, 0.18);
-  transition: all 0.3s ease;
-}
-.book-btn:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 40px rgba(17, 69, 0, 0.25);
-  background: linear-gradient(135deg, #0d3600, #1b5e20);
-}
-.book-btn:active {
-  transform: scale(0.97);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
-}
-.book-btn::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -120%;
-  width: 80%;
-  height: 100%;
-  background: rgba(255,255,255,0.18);
-  transform: skewX(-20deg);
-  transition: 0.7s;
-}
-
-.book-btn:hover::before {
-  left: 130%;
-}
-.booked-date {
-  background: #eee !important;
-  color: #aaa !important;
-  text-decoration: line-through;
-  border-radius: 10px;
-}
-
-#event-time::-webkit-calendar-picker-indicator {
-  transform: translateX(-5px);
-}
-
-#event-time {
-    padding: 0 10px 0 40px;
-}
-#event-time,
-#guest-count {
-  width: 100%;
-  height: 58px;
-  padding: 0 20px;
-  border: 2px solid rgba(17, 69, 0, 0.18);
-  border-radius: 18px;
-  background: #ffffff;
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  font-weight: 500;
-  color: #1c2b1a;
-  outline: none;
-  cursor: pointer;
-
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-
-  background-image: url("https://cdn-icons-png.flaticon.com/512/32/32195.png");
-  background-repeat: no-repeat;
-  background-position: right 18px center;
-  background-size: 14px;
-
-  box-shadow: 0 6px 18px rgba(17, 69, 0, 0.04);
-  transition: all 0.25s ease;
-}
-#event-location {
-  padding: 10px 25px;
-}
-#event-time:hover,
-#guest-count:hover {
-  border-color: #2e7d32;
-}
-
-#event-time:focus,
-#guest-count:focus {
-  border-color: #114500;
-  box-shadow: 0 0 0 4px rgba(17, 69, 0, 0.08);
-  transform: translateY(-1px);
-}
-
-#event-time option,
-#guest-count option {
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  padding: 10px;
-}
-textarea {
-  width: 100%;
-  padding: 15px 20px;
-  border-radius: 15px;
-  border: 2px solid #114500;
-  font-family: 'Domine', serif;
-  resize: none;
-  height: 80px;
-  margin-bottom: 10px;
-}
-
-/******************************** PAYMENT **************************************/
-.payment-options {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.payment-box {
-  padding: 14px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  text-align: center;
-  cursor: pointer;
-  transition: 0.2s;
-}
-.payment-box:hover {
-  border-color: #114500;
-  box-shadow: 0 8px 18px rgba(27,94,32,0.1);
-}
-.payment-box input {
-  display: none;
-}
-.payment-box input:checked + span {
-  font-weight: 600;
-  color: #114500;
-}
-
-.payment-box input:checked + span::before {
-  content: "✔ ";
-}
-/******************************** FOOTBAR ********************************/
-.footbar {
-  background: white;
-  border-top: 2px solid #114500;
-  border-bottom: 2px solid #114500;
-  text-align: center;
-  padding: 15px 20px;
-  font-family: 'Domine', serif;
-  color: #114500;
-  font-size: 14px;
-  margin-top: 40px;
-}
-/******************************** FOOTER **************************************/
-.footer {
-  background: #eee;
-  padding: 40px 60px;
-}
-
-.footer-top {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-
-.footer-logo img {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  object-fit: cover;    
-}
-
-.footer-col {
-  font-size: 13px;
-}
-
-.footer-col h4 {
-  margin-bottom: 10px;
-  color: #114500;
-}
-
-.footer-col p,
-.footer-col a {
-  display: block;
-  color: #114500;
-  text-decoration: none;
-  margin-bottom: 5px;
-}
-
-.footer-bottom {
-  text-align: center;
-  margin-top: 20px;
-  color: #114500;
-}
-
-/******************************** GCASH LOGO **************************************/
-.gcash img {
-  width: 40px;
-  height: 40px;         
-  border-radius: 50%;    
-  object-fit: cover;      
-}
-input, select, textarea {
-  background: #f9fbf9;
-  border: 1px solid #dfe6df;
-}
-
-input:focus, select:focus, textarea:focus {
-  background: #fff;
-}
-h1 {
-  font-size: 38px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-}
-.modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  justify-content: center;
-  align-items: center;
-}
-
-.modal.show {
-  display: flex;
+    font-family: 'Domine', serif;
+    background: #ddd;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+}
+
+/* RECEIPT */
+.receipt {
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 15px;
+    width: 400px;
+    max-width: 100%;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    color: #114500;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-top: 6px solid #114500;
+}
+
+.logo {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #114500;
+    display: block;
+    margin: 0 auto;
+}
+
+h2 {
+    text-align: center;
+    margin: 10px 0;
+}
+
+/* DIVIDER */
+.line {
+    border-top: 1px dashed #114500;
+    margin: 15px 0;
+}
+
+.details {
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+#total {
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+    margin: 10px 0;
+}
+
+/* QR SMALL */
+#qrImg {
+    width: 90px;
+    height: 90px;
+}
+
+.qr {
+    text-align: center;
+    margin: 10px 0;
+}
+
+button {
+    background: #114500;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 25px;
+    cursor: pointer;
+    width: 100%;
+    font-family: 'Domine', serif;
+    font-size: 15px;
+    margin-top: 15px;
+}
+
+button:hover {
+    background: #0d3600;
 }
 </style>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
 </head>
 
 <body>
 
-<!-------------------------------- TOPBAR ------------------------------------->
-<div class="topbar">
-      <div class="topbar-center">Planning an event? <a href="Bookyourevent.html" class="book-link">Book Now</a> and reserve your date with Cafe Bella.</div>
+<div class="receipt" id="receipt">
 
-  <div class="topbar-right">
-    <img src="https://cdn-icons-png.flaticon.com/512/733/733547.png">
-    <img src="https://cdn-icons-png.flaticon.com/512/3046/3046121.png">
-  </div>
-</div>
+    <div>
+        <img src="IMAGES/Cafebella.jpg" class="logo" alt="Cafe Bella Logo">
+        <h2>Booking Receipt</h2>
 
-<!-------------------------------- NAVBAR ------------------------------------->
-  <div class="navbar">
-    <div class="nav-logo">
-      <a href="index.html">
-      <img src="IMAGES/Cafebella.jpg" alt="Cafe Bella Logo"></a>
-  </div>
+        <div class="line"></div>
 
-  <ul class="nav-menu">
-      <li><a href="index.html">Home</a></li>
-      <li><a href="Menu.html">Menu</a></li>
-      <li><a href="Package.html" class="active">Packages</a></li>
-      <li><a href="Location.html">Location</a></li>
-      <li><a href="FAQ.html">FAQs</a></li>
-  </ul>
-</div>
-
-<!-------------------------------- FORM ------------------------------------->
-<div class="container rise-item">
-  <h1>Book your event</h1>
-  <div class="subtitle rise-item">
-    Fill out the form and we’ll confirm within 24 hours
-  </div>
-
-<!-------------------------------- CUSTOMER DETAILS ------------------------------------->
-  <div class="card rise-item">
-    <div class="section-title rise-item">Customer Details</div>
-
-    <label>Full Name</label>
-    <input type="text" 
-       placeholder="Enter your Full Name" 
-       required 
-       pattern="[A-Za-z\s]+" 
-       title="Please enter your full name using letters only">
-
-    <label>Email Address</label>
-      <input type="email" placeholder="example@hotmail.com" required 
-       pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" 
-       title="Please enter a valid email, e.g., example@hotmail.com">
-    <div class="row">
-      <div style="flex:1;">
-        <label>Facebook / Messenger</label>
-        <input type="text" 
-       placeholder="@username" 
-       pattern="^@[\w]+$" 
-       title="Enter a valid username starting with @" 
-       required 
-       style="text-indent: 10px;">
-      </div>
-
-      <div style="flex:1;">
-        <label>Contact Number</label>
-        <input type="tel" 
-          id="contact-number"
-          placeholder="e.g. 09123456789" 
-          pattern="[0-9]{10,11}" 
-          inputmode="numeric"
-          title="Please enter 10-11 digits only"
-          required>      
-      </div>
+        <div class="details">
+            <p><strong>Receipt Code:</strong> <?= htmlspecialchars($receipt_code) ?></p>
+            <p><strong>Full Name:</strong> <?= htmlspecialchars($booking['full_name']) ?></p>
+            <p><strong>Contact:</strong> <?= htmlspecialchars($booking['contact_number']) ?></p>
+            <p><strong>Service:</strong> <?= htmlspecialchars($booking['service_type']) ?></p>
+            <p><strong>Guests:</strong> <?= htmlspecialchars($booking['guest_count']) ?></p>
+            <p><strong>Event Date:</strong> <?= date("F j, Y", strtotime($booking['event_date'])) ?></p>
+            <p><strong>Event Time:</strong> <?= date("g:i A", strtotime($booking['event_time'])) ?></p>
+            <p><strong>Address:</strong> <?= htmlspecialchars($booking['street_address']) ?>, <?= htmlspecialchars($booking['barangay']) ?>, <?= htmlspecialchars($booking['city']) ?>, <?= htmlspecialchars($booking['province']) ?></p>
+            <p><strong>Payment Type:</strong> <?= htmlspecialchars($booking['payment_type']) ?></p>
+            <p><strong>Payment Method:</strong> <?= htmlspecialchars($booking['payment_method']) ?></p>
+        </div>
     </div>
-  </div>
-  
-<!-------------------------------- SERVICE COLLECTION ------------------------------------->
-<div class="card rise-item">
-    <div class="section-title">Service Selection</div>
 
-<div class="services rise-item">
+    <div>
+        <div class="line"></div>
 
-  <!-- ☕ COFFEE -->
-  <div class="service-box">
-    <div class="service-title">Coffee Booth</div>
-    <div class="price">
-      ₱5,000 — Up to 50 cups<br>
-      <small>Price adjusts based on number of cups ordered</small>
-    </div>
-  </div>
-
-  <!-- 🍵 MATCHA -->
-  <div class="service-box">
-    <div class="service-title">Matcha Booth</div>
-    <div class="price">
-      ₱9,000 — Up to 100 cups<br>
-      <small>Price adjusts based on number of cups ordered</small>
-    </div>
-  </div>
-
-  <!-- 🎨 TATTOO -->
-  <div class="service-box">
-    <div class="service-title">Tattoo Event</div>
-    <div class="price">
-      ₱1,000 — In-store service only<br>
-      Includes 2 minimalist tattoos
-    </div>
-  </div>
-
-</div>
-
-    <div class="total">₱ 0000</div>
-  </div>
-<!-------------------------------- BOOKING DETAILS ------------------------------------->
-<div class="card rise-item">
-
-  <!-- TITLE -->
-  <h2 class="booking-title">Booking Details</h2>
-
-  <form id="bookingForm" class="booking-form">
-
-    <div class="booking-layout">
-
-      <!-- LEFT SIDE: CALENDAR -->
-      <div class="calendar-box">
-        <div id="calendar"></div>
-      </div>
-
-      <!-- RIGHT SIDE: FORM -->
-      <div class="details-box">
-
-        <!-- TIME + GUESTS (ROW) -->
-<div class="form-row">
-
-  <!-- TIME -->
-  <div class="form-group">
-    <label for="event-time">Time</label>
-    <select id="event-time" required>
-      <option value="" disabled selected>Select time</option>
-
-      <option>9:00 AM</option>
-      <option>10:00 AM</option>
-      <option>11:00 AM</option>
-      <option>12:00 PM</option>
-      <option>1:00 PM</option>
-      <option>2:00 PM</option>
-      <option>3:00 PM</option>
-      <option>4:00 PM</option>
-      <option>5:00 PM</option>
-      <option>6:00 PM</option>
-      <option>7:00 PM</option>
-      <option>8:00 PM</option>
-      <option>9:00 PM</option>
-      <option>10:00 PM</option>
-      <option>11:00 PM</option>
-    </select>
-  </div>
-
-<div class="form-group">
-  <label for="guest-count">Number of Guests</label>
-
-  <input 
-    type="number" 
-    id="guest-count" 
-    min="30"
-    max="100"
-    placeholder="Enter number of guests"
-    required
-  >
-
-  <!-- 🔴 ERROR MESSAGE DITO -->
-  <div id="guest-error" style="color:red; font-size:12px; margin-top:5px;"></div>
-
-  <small style="color:#666;">
-    Minimum of 30 guests required
-  </small>
-</div>
-
-</div>
-        <!-- LOCATION SECTION -->
-        <div class="form-group">
-          <label for="province">Province</label>
-          <select id="province" name="province" required>
-            <option value="">Select Province</option>
-          </select>
+        <div id="total">
+            <p>Total Package Price: ₱ <?= number_format($booking['total_amount'], 2) ?></p>
+            <p>Amount Paid: ₱ <?= number_format($amount_paid, 2) ?></p>
+            <p>Remaining Balance: ₱ <?= number_format($remaining_balance, 2) ?></p>
         </div>
 
-        <div class="form-group">
-          <label for="city">City / Municipality</label>
-          <select id="city" name="city" required>
-            <option value="">Select City</option>
-          </select>
+        <p style="text-align:center; font-weight:500;">Thank you! 🎉</p>
+
+        <div class="qr">
+            <img id="qrImg" alt="QR Code">
         </div>
 
-        <div class="form-group">
-          <label for="barangay">Barangay</label>
-          <select id="barangay" name="barangay" required>
-            <option value="">Select Barangay</option>
-          </select>
-        </div>
-
-        <!-- ADDRESS DETAILS -->
-        <div class="form-group">
-          <label for="zip_code">Zip Code</label>
-          <input 
-            type="text" 
-            id="zip_code" 
-            name="zip_code" 
-            placeholder="Enter Zip Code" 
-            required>
-        </div>
-
-        <div class="form-group">
-          <label for="street">House No. / Street</label>
-          <input 
-            type="text" 
-            id="street" 
-            name="street" 
-            placeholder="House No. and Street" 
-            required>
-        </div>
-
-      </div>
-
+        <button onclick="downloadPDF()">⬇ Download Receipt as PDF</button>
     </div>
 
-  </form>
 </div>
-<!-------------------------------- PAYMENT METHOD ------------------------------------->
-<div class="card rise-item">
-
-  <div class="section-title">💳 Payment Method</div>
-
-  <label style="margin-top:10px;">Select Payment Type</label>
-  <div class="payment-options">
-
-    <label class="payment-box rise-item">
-      <input type="radio" name="payment_type" value="full">
-      <span>Full Payment</span>
-    </label>
-
-    <label class="payment-box rise-item">
-      <input type="radio" name="payment_type" value="reservation">
-      <span>Reservation Fee Only</span>
-    </label>
-
-  </div>
-
-<!-------------------------------- PAYMENT OPTION ------------------------------------->
-  <label style="margin-top:20px;">Select Payment Option</label>
-  <div class="payment-options rise-item">
-    <label class="payment-box">
-      <input type="radio" name="pay" value="cash">
-      <span>Cash</span>
-    </label>
-
-    <label class="payment-box rise-item">
-      <input type="radio" name="pay" value="gcash">
-      <span>GCash</span>
-    </label>
-  </div>
-</div>
-
-<!-------------------------------- ADDITIONAL NOTES ------------------------------------->
-<div class="card rise-item">
-
-  <div class="section-title">Preferences & Customization</div>
-
-  <label>Additional Notes</label>
-  <textarea placeholder="Any other requests or instructions"></textarea>
-
-</div>
-
-<!-------------------------------- TERMS AND CONDITON ------------------------------------->
-<div class="card rise-item">
-
-  <div class="section-title">Terms and Condition</div>
-
-  <div style="font-size:13px; line-height:1.5;">
-
-    <p style="margin-bottom:10px;">
-      Please take a moment to review our Terms and Conditions to ensure a smooth and hassle-free booking experience with Cafe BELLA.
-    </p>
-
-    <ul style="padding-left:18px; margin-bottom:10px;">
-      <li>Bookings must be made at least one (1) week in advance.</li>
-      <li>The ₱2,000 reservation fee applies only to Coffee Booth and Matcha Booth bookings.<br>For Tattoo Event bookings, the fee does not apply as it is an in-store service (2 minimalist tattoos for ₱1,000, in-store only).</li>
-      <li>Payments accepted: GCash and Cash.</li>
-      <li>Remaining balance must be settled before or on the event date.</li>
-      <li>Reservation fee is non-refundable.</li>
-      <li><strong>No cancellation policy.</strong> Once a booking is confirmed, it cannot be canceled.</li>
-      <li>Clients must provide accurate event details.</li>
-      <li>Cafe BELLA may adjust bookings due to unforeseen circumstances.</li>
-    </ul>
-  </div>
-</div>
-
-<!-------------------------------- AGREE TO THE AGREEMENT ------------------------------------->
-<div class="card" style="display:flex; align-items:center; gap:10px;">
-
-  <input type="checkbox" id="agree" style="width:18px; height:18px;">
-
-  <label for="agree" style="font-size:13px;">
-    I agree to the terms and conditions and booking policies of Cafe BELLA.
-  </label>
-
-</div>
-
-<!-------------------------------- BUTTON ------------------------------------->
-<button id="complete-booking" class="book-btn" style="width:100%; max-width:400px;">
-  Complete Booking
-</button>
-</div>
-
-<!-------------------------------- CONTACT US ------------------------------------->
-<p style="text-align:center; font-size:12px; margin-top:10px;">
-  Need help? Contact us at @cafeBELLA on Facebook or Messenger
-</p>
-</div>
-<!-------------------------------- FOOTBAR ------------------------------------->
-<div class="footbar rise-item">
-  Kape lang saglit tapos laban ulit
-</div>
-<!-------------------------------- FOOTER ------------------------------------->
-<div class="footer rise-item">
-
-  <div class="footer-top rise-item">
-
-    <div class="footer-logo rise-item">
-      <img src="IMAGES/Cafebella.jpg">
-    </div>
-
-    <div class="footer-col rise-item">
-      <h4>Quick Links</h4>
-      <a href="index.html">Home</a>
-      <a href="Menu.html">Menu</a>
-      <a href="Package.html">Event Packages</a>
-      <a href="#">Feedback</a>
-      <a href="#">Location</a>
-      <a href="#">FAQ's</a>
-    </div>
-
-    <div class="footer-col rise-item">
-      <h4>Services</h4>
-      <a href="Package.html">Coffee Booth</a>
-      <a href="Package.html">Matcha Booth</a>
-      <a href="Package.html">Tattoo Event</a>
-    </div>
-
-    <div class="footer-col rise-item">
-      <h4>About</h4>
-      <a href="#">Contact Our Team</a>
-    </div>
-
-    <div class="footer-col rise-item">
-      <h4>Socials</h4>
-      <a href="https://www.facebook.com/share/1CiwKkiCkY/" target="_blank" rel="noopener">Facebook</a>
-      <a href="https://www.tiktok.com/@christiandavidangelo?_r=1&_t=ZS-94tpPJhFWzZ" target="_blank" rel="noopener">Tiktok</a>
-    </div>
-
-    <div class="footer-col gcash rise-item">
-      <h4>We accept</h4>
-      <img src="IMAGES/GCash.png">
-    </div>
-
-  </div>
-
-  <div class="footer-bottom rise-item">
-    © 2026 Cafe BELLA. All rights reserved.
-  </div>
-
-<div id="serviceModal" class="modal">
-
-  <div style="background:#fff; padding:25px; border-radius:15px; width:320px; text-align:center;">
-
-    <h3 id="modalTitle">Service</h3>
-
-    <button onclick="selectPackage()" style="width:100%; margin:10px 0; padding:12px;">
-      Select Package
-    </button>
-
-    <button onclick="showCustom()" style="width:100%; padding:12px;">
-      Customize Service
-    </button>
-
-    <div id="customBox" style="margin-top:15px; display:none;">
-      <label>Number of Cups</label>
-      <input type="number" id="modalCups" min="1" style="width:100%; padding:10px;">
-
-      <div id="priceInfo" style="margin-top:10px; font-size:13px;"></div>
-
-      <!-- ✅ DITO MO ILALAGAY -->
-      <button onclick="applyCustom()" style="width:100%; margin-top:10px; padding:12px;">
-        Apply
-      </button>
-    </div>
-
-    <br>
-    <button onclick="closeModal()">Close</button>
-
-  </div>
-
-</div>
-</body>
 
 <script>
+// Ilagay ang QR code gamit ang Receipt Code
+document.getElementById("qrImg").src = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=Receipt:<?= urlencode($receipt_code) ?>`;
 
-let selectedService = "";
-let pricingType = "package";
-let selectedDate = "";
-let total = 0; // 🔥 ADD THIS
+// ✅ PDF DOWNLOAD FUNCTION
+function downloadPDF() {
+    const element = document.getElementById("receipt");
 
-/******************************** CONSISTENT RISE ANIMATION ********************************/
+    const opt = {
+        margin:       0.5,
+        filename:     `CafeBella_Receipt_<?= $receipt_code ?>.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
 
-const riseElements = document.querySelectorAll(".rise-title, .rise-desc, .rise-item, .event-card");
-
-function handleRise() {
-  const triggerPoint = window.innerHeight * 0.85;
-
-  riseElements.forEach(el => {
-    const elementTop = el.getBoundingClientRect().top;
-
-    if (elementTop < triggerPoint) {
-      el.classList.add("show");
-    } else {
-      el.classList.remove("show");
-    }
-  });
+    html2pdf().set(opt).from(element).save();
 }
-
-window.addEventListener("scroll", handleRise);
-window.addEventListener("load", handleRise);
-
-/******************************** SERVICES **************************/
-
-window.onload = function () {
-
-  const boxes = document.querySelectorAll(".service-box");
-  const guestInput = document.getElementById("guest-count");
-
-  // ☕🍵 SERVICE CLICK
-boxes.forEach(box => {
-  box.addEventListener("click", () => {
-
-    // reset styles
-    boxes.forEach(b => {
-      b.style.background = "white";
-      b.style.color = "#114500";
-    });
-
-    // highlight selected
-    box.style.background = "#114500";
-    box.style.color = "white";
-
-    // ✅ DITO MO ILALAGAY
-    let rawService = box.querySelector(".service-title")
-      .textContent
-      .toLowerCase()
-      .trim();
-
-    if (rawService.includes("coffee")) selectedService = "coffee";
-    else if (rawService.includes("matcha")) selectedService = "matcha";
-    else if (rawService.includes("tattoo")) selectedService = "tattoo";
-
-    // 🔥 DEFAULT PRICE DISPLAY (FIXED)
-    if (selectedService.includes("coffee")) {
-      document.querySelector(".total").innerHTML = "Estimated Total: ₱5,000";
-    }
-    else if (selectedService.includes("matcha")) {
-      document.querySelector(".total").innerHTML = "Estimated Total: ₱9,000";
-    }
-    else if (selectedService.includes("tattoo")) {
-      document.querySelector(".total").innerHTML = "Estimated Total: ₱1,000";
-    }
-
-    // 🔥 IMPORTANT: auto compute after select
-    computeTotal();
-
-  });
-});
-
-  // 🔥 LIVE UPDATE WHEN TYPING
-  guestInput.addEventListener("input", function () {
-    computeTotal(); // 🔥 HERE
-  });
-
-  // 🔥 ENTER KEY SUPPORT
-  guestInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      computeTotal(); // 🔥 HERE
-    }
-  });
-};
-
-
-function handleServiceSelect(service) {
-
-  selectedService = service.toLowerCase().trim();
-
-  // IMMEDIATE BASE DISPLAY
-  const totalDisplay = document.querySelector(".total");
-
-  if (selectedService.includes("coffee")) {
-    total = 5000;
-    totalDisplay.innerHTML = "Estimated Total: ₱5,000";
-  }
-
-  else if (selectedService.includes("matcha")) {
-    total = 9000;
-    totalDisplay.innerHTML = "Estimated Total: ₱9,000";
-  }
-
-  computeTotal(); // still allow update if guests exist
-}
-function selectPackage() {
-
-    const guests = parseInt(document.getElementById("guest-count").value) || 0;
-
-    if (selectedService.includes("coffee")) {
-
-        const baseGuests = 30;
-        const basePrice = 3450;
-        const capGuests = 50;
-        const capPrice = 5000;
-        const perHead = 120;
-
-        if (guests <= baseGuests) {
-            total = basePrice;
-        } 
-        else if (guests < capGuests) {
-            total = basePrice + ((guests - baseGuests) * perHead);
-        } 
-        else {
-            total = capPrice;
-        }
-    }
-
-    updateTotalUI();
-    closeModal();
-}
-
-function showCustom() {
-  document.getElementById("customBox").style.display = "block";
-}
-
-document.getElementById("modalCups").addEventListener("input", function() {
-
-  let cups = parseInt(this.value) || 0;
-  let rate = 120;
-
-  let base = selectedService.includes("coffee") ? 5000 : 9000;
-  let limit = selectedService.includes("coffee") ? 50 : 100;
-
-  let total = 0;
-  let info = "";
-
-  if (cups <= limit) {
-    total = base;
-    info = `Package price: ₱${base}`;
-  } else {
-    let extra = cups - limit;
-    total = base + (extra * rate);
-
-    info = `
-      Base: ₱${base}<br>
-      Extra cups (${extra} × ₱120): ₱${extra * rate}
-    `;
-  }
-
-  document.getElementById("priceInfo").innerHTML = info;
-
-  window.tempTotal = total;
-});
-
-function applyCustom() {
-  total = window.tempTotal || 0;
-  updateTotalUI();
-  closeModal();
-}
-
-function updateTotalUI() {
-  document.querySelector(".total").innerHTML =
-    `Estimated Total: ₱${total.toLocaleString()}`;
-}
-
-function closeModal() {
-  document.getElementById("serviceModal").classList.remove("show");
-}
-
-function proceedToPayment() {
-
-    const service = document.getElementById("service").value;
-    const total = document.getElementById("totalPrice").innerText;
-    const paymentType = document.querySelector('input[name="pay"]:checked')?.value;
-
-    // VALIDATION
-    if (!service) {
-        alert("Please select a service.");
-        return;
-    }
-
-    if (!total) {
-        alert("Missing total price.");
-        return;
-    }
-
-    if (!paymentType) {
-        alert("Please select payment method (Cash or GCash).");
-        return;
-    }
-
-    // SAVE DATA
-    localStorage.setItem("total", totalPrice);
-    localStorage.setItem("service", selectedService);
-    localStorage.setItem("paymentType", paymentType);
-
-    // 🔥 REDIRECT LOGIC (IMPORTANT FIX)
-    if (paymentType === "gcash") {
-        window.location.href = "Payment.html";
-    } 
-    else if (paymentType === "cash") {
-        window.location.href = "Paymentcash.html";
-    }
-}
-
-function computeTotal() {
-
-  const guestInput = document.getElementById("guest-count");
-  const guests = parseInt(document.getElementById("guest-count").value);
-  const totalDisplay = document.querySelector(".total");
-
-  // ❗ if no number yet → show base price on select
-  if (!guests) {
-    if (selectedService.includes("coffee")) {
-      totalDisplay.innerHTML = "Estimated Total: ₱5,000";
-    } 
-    else if (selectedService.includes("matcha")) {
-      totalDisplay.innerHTML = "Estimated Total: ₱9,000";
-    }
-    return;
-  }
-
-  // ❌ VALIDATION
-  if (guests < 30) {
-    totalDisplay.innerHTML = "Minimum of 30 guests required.";
-    return;
-  }
-
-  if (guests > 100) {
-    totalDisplay.innerHTML = "Maximum of 100 guests required.";
-    return;
-  }
-
-  if (!selectedService) {
-    totalDisplay.innerHTML = "Please select a service first.";
-    return;
-  }
-
-  let total = 0;
-
-  // ☕ COFFEE BOOTH (YOUR EXACT TABLE)
-  if (selectedService.includes("coffee")) {
-
-    const base = 3450;
-
-    if (guests === 30) {
-      total = base;
-    }
-
-    else if (guests < 50) {
-      total = base + ((guests - 30) * 120);
-    }
-
-    else if (guests === 50) {
-      total = 5000; // 🔥 FIXED CAP (no more 5850 bug)
-    }
-
-    else {
-      // 🔥 AFTER 50 → NEW RATE (₱80)
-      total = 5000 + ((guests - 50) * 80);
-    }
-  }
-
-  // 🍵 MATCHA BOOTH (YOUR EXACT TABLE)
-  else if (selectedService.includes("matcha")) {
-
-    const base = 3450;
-
-    if (guests === 30) {
-      total = base;
-    }
-
-    else {
-      total = base + ((guests - 30) * 80);
-
-      // 🔥 CAP AT 9000
-      if (total > 9000) {
-        total = 9000;
-      }
-    }
-  }
-
-  // 🎨 TATTOO
-  else if (selectedService.includes("tattoo")) {
-    total = 1000;
-  }
-
-  totalDisplay.innerHTML = `
-    Estimated Total: ₱${total.toLocaleString()}<br>
-    <small style="color:#666;">
-      Final price subject to confirmation by Cafe Bella
-    </small>
-  `;
-
-  window.finalTotal = total;
-}
-
-/******************************** CALENDAR FLATPICKR **************************/
-    const bookedDates = [
-        "2026-03-01","2026-03-03","2026-03-05",
-        "2026-03-08","2026-03-10","2026-03-12",
-        "2026-03-15","2026-03-18","2026-03-22",
-        "2026-03-25"
-    ];
-
-    flatpickr("#calendar", {
-        inline: true,
-        minDate: "today",
-        disable: bookedDates,
-        dateFormat: "Y-m-d",
-        onDayCreate: function(dObj, dStr, fp, dayElem){
-            const date = dayElem.dateObj;
-            const formattedDate = fp.formatDate(date, "Y-m-d");
-            if(bookedDates.includes(formattedDate)){
-                dayElem.classList.add("booked-date");
-                dayElem.title = "Fully Booked";
-            }
-        },
-        onChange: function(selectedDates, dateStr){
-            selectedDate = dateStr;
-        }
-    });
-
-/******************************** CONTACT NUMBER RESTRICTION **************************/
-const contactInput = document.querySelector('input[placeholder*="0912"]'); 
-
-const errorMsg = document.createElement("div");
-errorMsg.style.color = "red";
-errorMsg.style.fontSize = "12px";
-errorMsg.style.marginTop = "5px";
-contactInput.parentNode.insertBefore(errorMsg, contactInput.nextSibling);
-
-// BLOCK letters while typing
-contactInput.addEventListener("keypress", function(e) {
-    if(!/[0-9]/.test(e.key)) {
-        e.preventDefault();
-        errorMsg.textContent = "Numbers only are allowed";
-    } else {
-        errorMsg.textContent = "";
-    }
-});
-
-// LIMIT to 11 digits (MAIN FIX)
-contactInput.addEventListener("input", function() {
-    let value = contactInput.value;
-
-    // Remove non-numbers (extra safety)
-    value = value.replace(/\D/g, '');
-
-    // Limit to 11 digits
-    if (value.length > 11) {
-        value = value.slice(0, 11);
-    }
-
-    contactInput.value = value;
-});
-
-// BLOCK invalid paste
-contactInput.addEventListener("paste", function(e) {
-    const pasteData = (e.clipboardData || window.clipboardData).getData('text');
-
-    if(/\D/.test(pasteData)) {
-        e.preventDefault();
-        errorMsg.textContent = "Numbers only are allowed";
-        return;
-    }
-
-    // Limit pasted content to 11 digits
-    if (pasteData.length > 11) {
-        e.preventDefault();
-        contactInput.value = pasteData.slice(0, 11);
-    }
-});
-const completeBtn = document.getElementById("complete-booking");
-
-completeBtn.addEventListener("click", function() {
-
-    const fullName = document.querySelector('input[placeholder*="Full Name"]').value.trim();
-    const email = document.querySelector('input[placeholder*="example"]').value.trim();
-    const facebook = document.querySelector('input[placeholder*="@username"]').value.trim();
-    const contact = contactInput.value.trim();
-    const eventTime = document.getElementById("event-time").value;
-
-    const provinceSelect = document.getElementById("province");
-    const citySelect = document.getElementById("city");
-    const barangaySelect = document.getElementById("barangay");
-    const street = document.getElementById("street").value;
-
-    // ✔ GET REAL NAMES (hindi code)
-    const province = provinceSelect.options[provinceSelect.selectedIndex].dataset.name;
-    const city = citySelect.options[citySelect.selectedIndex].dataset.name;
-    const barangay = barangaySelect.value;
-
-    // ✔ FINAL FORMAT
-    const eventLocation = `Province: ${province}, City: ${city}, Barangay: ${barangay}, Street: ${street}`;
-
-
-    const paymentType = document.querySelector('input[name="payment_type"]:checked')?.value;
-    const paymentMethod = document.querySelector('input[name="pay"]:checked')?.value;
-
-    const agree = document.getElementById("agree").checked;
-
-    // ✅ VALIDATIONS
-    if(!fullName) return alert("Enter Full Name");
-    if(!email) return alert("Enter Email");
-    if(!facebook) return alert("Enter Facebook");
-    if(!contact) return alert("Enter Contact Number");
-    if(!selectedDate) return alert("Select a Date");
-    if(!eventTime) return alert("Select Time");
-    if(!selectedService) return alert("Please select a service.");
-    if(!paymentType) return alert("Please select a payment type.");
-    if(!paymentMethod) return alert("Please select payment method.");
-    if(!agree) return alert("You must agree to the terms.");
-
-    // ✅ SAVE DATA
-    let serviceName = "";
-
-    if(selectedService === "coffee") serviceName = "Coffee Booth";
-    else if(selectedService === "matcha") serviceName = "Matcha Booth";
-    else if(selectedService === "tattoo") serviceName = "Tattoo Event";
-
-    localStorage.setItem("service", serviceName);
-    localStorage.setItem("paymentMethod", paymentMethod);
-    localStorage.setItem("paymentType", paymentType);
-    localStorage.setItem("total", window.finalTotal);
-    localStorage.setItem("customerName", fullName);
-    localStorage.setItem("customerEmail", email);
-    localStorage.setItem("customerFacebook", facebook);
-    localStorage.setItem("customerContact", contact);
-    localStorage.setItem("eventDate", selectedDate);
-    localStorage.setItem("eventTime", eventTime);
-
-
-    const guests = parseInt(document.getElementById("guest-count").value);
-
-    localStorage.setItem("guestCount", guests);
-
-    const formattedLocation = `Province: ${province}, City: ${city}, Barangay: ${barangay}, Street: ${street}`;
-
-    localStorage.setItem("eventLocation", formattedLocation);
-
-    // ✅ REDIRECT
-    console.log("METHOD:", paymentMethod);
-
-    if(paymentMethod === "cash") {
-        window.location.href = "Paymentcash.html";
-    } 
-    else if(paymentMethod === "gcash") {
-        window.location.href = "Payment.html";
-    }
-});
-
-/******************************** PHILIPPINE AUTO-LOAD ADDRESS (MODIFIED FOR CALABARZON) **********/    
-/******************************** PHILIPPINE AUTO-LOAD ADDRESS (MODIFIED FOR CALABARZON) **********/
-    const provinceSelect = document.getElementById("province");
-    const citySelect = document.getElementById("city");
-    const barangaySelect = document.getElementById("barangay");
-
-// Load Provinces - Filtered for CALABARZON (Region Code: 040000000)
-fetch("https://psgc.gitlab.io/api/provinces/")
-  .then(res => res.json())
-  .then(data => {
-    // Filter for CALABARZON region (regionCode: '040000000')
-    const calabarzonProvinces = data.filter(province => province.regionCode === '040000000');
-    
-    calabarzonProvinces.sort((a, b) => a.name.localeCompare(b.name));
-    provinceSelect.innerHTML = `<option value="">Select Province</option>`; // Reset options
-    calabarzonProvinces.forEach(province => {
-      provinceSelect.innerHTML += `<option value="${province.code}" data-name="${province.name}">${province.name}</option>`;
-    });
-  })
-  .catch(error => {
-      console.error("Error fetching provinces:", error);
-      provinceSelect.innerHTML = `<option value="">Error loading provinces</option>`;
-  });
-
-// When Province changes → load Cities
-provinceSelect.addEventListener("change", function () {
-  const provinceCode = this.value;
-  const provinceName = this.options[this.selectedIndex].dataset.name; // Get the name
-
-  citySelect.innerHTML = `<option value="">Loading...</option>`;
-  barangaySelect.innerHTML = `<option value="">Select Barangay</option>`; // Reset barangay when province changes
-
-  if (!provinceCode) { // If no province is selected
-      citySelect.innerHTML = `<option value="">Select City</option>`;
-      return;
-  }
-
-  fetch(`https://psgc.gitlab.io/api/provinces/${provinceCode}/cities-municipalities/`)
-    .then(res => res.json())
-    .then(data => {
-      citySelect.innerHTML = `<option value="">Select City</option>`;
-      data.sort((a, b) => a.name.localeCompare(b.name));
-
-      data.forEach(city => {
-        citySelect.innerHTML += `<option value="${city.code}" data-name="${city.name}">${city.name}</option>`; // Store name
-      });
-    })
-    .catch(error => {
-        console.error("Error fetching cities:", error);
-        citySelect.innerHTML = `<option value="">Error loading cities</option>`;
-    });
-});
-
-// When City changes → load Barangays
-citySelect.addEventListener("change", function () {
-  const cityCode = this.value;
-  const cityName = this.options[this.selectedIndex].dataset.name; // Get the name
-
-  barangaySelect.innerHTML = `<option value="">Loading...</option>`;
-
-  if (!cityCode) { // If no city is selected
-      barangaySelect.innerHTML = `<option value="">Select Barangay</option>`;
-      return;
-  }
-
-  fetch(`https://psgc.gitlab.io/api/cities-municipalities/${cityCode}/barangays/`)
-    .then(res => res.json())
-    .then(data => {
-      barangaySelect.innerHTML = `<option value="">Select Barangay</option>`;
-      data.sort((a, b) => a.name.localeCompare(b.name));
-
-      data.forEach(brgy => {
-        barangaySelect.innerHTML += `<option value="${brgy.name}">${brgy.name}</option>`;
-      });
-    })
-    .catch(error => {
-        console.error("Error fetching barangays:", error);
-        barangaySelect.innerHTML = `<option value="">Error loading barangays</option>`;
-    });
-});
-
 </script>
+
+</body>
 </html>
