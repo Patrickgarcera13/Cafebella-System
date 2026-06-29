@@ -904,22 +904,12 @@ h1 {
         <!-- ADDRESS DETAILS -->
         <div class="form-group">
           <label for="zip_code">Zip Code</label>
-          <input 
-            type="text" 
-            id="zip_code" 
-            name="zip_code" 
-            placeholder="Enter Zip Code" 
-            required>
+          <input type="text" id="zip_code" name="zip_code" placeholder="Enter Zip Code" required>
         </div>
 
         <div class="form-group">
           <label for="street">House No. / Street</label>
-          <input 
-            type="text" 
-            id="street" 
-            name="street" 
-            placeholder="House No. and Street" 
-            required>
+          <input type="text" id="street" name="street" placeholder="House No. and Street" required>
         </div>
 
       </div>
@@ -1071,46 +1061,13 @@ h1 {
     © 2026 Cafe BELLA. All rights reserved.
   </div>
 
-<div id="serviceModal" class="modal">
 
-  <div style="background:#fff; padding:25px; border-radius:15px; width:320px; text-align:center;">
-
-    <h3 id="modalTitle">Service</h3>
-
-    <button onclick="selectPackage()" style="width:100%; margin:10px 0; padding:12px;">
-      Select Package
-    </button>
-
-    <button onclick="showCustom()" style="width:100%; padding:12px;">
-      Customize Service
-    </button>
-
-    <div id="customBox" style="margin-top:15px; display:none;">
-      <label>Number of Cups</label>
-      <input type="number" id="modalCups" min="1" style="width:100%; padding:10px;">
-
-      <div id="priceInfo" style="margin-top:10px; font-size:13px;"></div>
-
-      <!-- ✅ DITO MO ILALAGAY -->
-      <button onclick="applyCustom()" style="width:100%; margin-top:10px; padding:12px;">
-        Apply
-      </button>
-    </div>
-
-    <br>
-    <button onclick="closeModal()">Close</button>
-
-  </div>
-
-</div>
 </body>
 
 <script>
 
 let selectedService = "";
-let pricingType = "package";
 let selectedDate = "";
-let total = 0; // 🔥 ADD THIS
 
 /******************************** CONSISTENT RISE ANIMATION ********************************/
 
@@ -1133,287 +1090,83 @@ function handleRise() {
 window.addEventListener("scroll", handleRise);
 window.addEventListener("load", handleRise);
 
-/******************************** SERVICES **************************/
+/******************************** SERVICES SELECTION **************************/
 
 window.onload = function () {
-
   const boxes = document.querySelectorAll(".service-box");
   const guestInput = document.getElementById("guest-count");
 
-  // ☕🍵 SERVICE CLICK
-boxes.forEach(box => {
-  box.addEventListener("click", () => {
+  boxes.forEach(box => {
+    box.addEventListener("click", () => {
+      boxes.forEach(b => {
+        b.style.background = "white";
+        b.style.color = "#114500";
+      });
 
-    // reset styles
-    boxes.forEach(b => {
-      b.style.background = "white";
-      b.style.color = "#114500";
+      box.style.background = "#114500";
+      box.style.color = "white";
+
+      let rawService = box.querySelector(".service-title").textContent.toLowerCase().trim();
+      if (rawService.includes("coffee")) selectedService = "coffee";
+      else if (rawService.includes("matcha")) selectedService = "matcha";
+      else if (rawService.includes("tattoo")) selectedService = "tattoo";
+
+      computeTotal();
     });
-
-    // highlight selected
-    box.style.background = "#114500";
-    box.style.color = "white";
-
-    // ✅ DITO MO ILALAGAY
-    let rawService = box.querySelector(".service-title")
-      .textContent
-      .toLowerCase()
-      .trim();
-
-    if (rawService.includes("coffee")) selectedService = "coffee";
-    else if (rawService.includes("matcha")) selectedService = "matcha";
-    else if (rawService.includes("tattoo")) selectedService = "tattoo";
-
-    // 🔥 DEFAULT PRICE DISPLAY (FIXED)
-    if (selectedService.includes("coffee")) {
-      document.querySelector(".total").innerHTML = "Estimated Total: ₱5,000";
-    }
-    else if (selectedService.includes("matcha")) {
-      document.querySelector(".total").innerHTML = "Estimated Total: ₱9,000";
-    }
-    else if (selectedService.includes("tattoo")) {
-      document.querySelector(".total").innerHTML = "Estimated Total: ₱1,000";
-    }
-
-    // 🔥 IMPORTANT: auto compute after select
-    computeTotal();
-
-  });
-});
-
-  // 🔥 LIVE UPDATE WHEN TYPING
-  guestInput.addEventListener("input", function () {
-    computeTotal(); // 🔥 HERE
   });
 
-  // 🔥 ENTER KEY SUPPORT
-  guestInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      computeTotal(); // 🔥 HERE
-    }
-  });
+  guestInput.addEventListener("input", computeTotal);
+  guestInput.addEventListener("keydown", e => { if (e.key === "Enter") computeTotal(); });
 };
 
-
-function handleServiceSelect(service) {
-
-  selectedService = service.toLowerCase().trim();
-
-  // IMMEDIATE BASE DISPLAY
-  const totalDisplay = document.querySelector(".total");
-
-  if (selectedService.includes("coffee")) {
-    total = 5000;
-    totalDisplay.innerHTML = "Estimated Total: ₱5,000";
-  }
-
-  else if (selectedService.includes("matcha")) {
-    total = 9000;
-    totalDisplay.innerHTML = "Estimated Total: ₱9,000";
-  }
-
-  computeTotal(); // still allow update if guests exist
-}
-function selectPackage() {
-
-    const guests = parseInt(document.getElementById("guest-count").value) || 0;
-
-    if (selectedService.includes("coffee")) {
-
-        const baseGuests = 30;
-        const basePrice = 3450;
-        const capGuests = 50;
-        const capPrice = 5000;
-        const perHead = 120;
-
-        if (guests <= baseGuests) {
-            total = basePrice;
-        } 
-        else if (guests < capGuests) {
-            total = basePrice + ((guests - baseGuests) * perHead);
-        } 
-        else {
-            total = capPrice;
-        }
-    }
-
-    updateTotalUI();
-    closeModal();
-}
-
-function showCustom() {
-  document.getElementById("customBox").style.display = "block";
-}
-
-document.getElementById("modalCups").addEventListener("input", function() {
-
-  let cups = parseInt(this.value) || 0;
-  let rate = 120;
-
-  let base = selectedService.includes("coffee") ? 5000 : 9000;
-  let limit = selectedService.includes("coffee") ? 50 : 100;
-
-  let total = 0;
-  let info = "";
-
-  if (cups <= limit) {
-    total = base;
-    info = `Package price: ₱${base}`;
-  } else {
-    let extra = cups - limit;
-    total = base + (extra * rate);
-
-    info = `
-      Base: ₱${base}<br>
-      Extra cups (${extra} × ₱120): ₱${extra * rate}
-    `;
-  }
-
-  document.getElementById("priceInfo").innerHTML = info;
-
-  window.tempTotal = total;
-});
-
-function applyCustom() {
-  total = window.tempTotal || 0;
-  updateTotalUI();
-  closeModal();
-}
-
-function updateTotalUI() {
-  document.querySelector(".total").innerHTML =
-    `Estimated Total: ₱${total.toLocaleString()}`;
-}
-
-function closeModal() {
-  document.getElementById("serviceModal").classList.remove("show");
-}
-
-function proceedToPayment() {
-
-    const service = document.getElementById("service").value;
-    const total = document.getElementById("totalPrice").innerText;
-    const paymentType = document.querySelector('input[name="pay"]:checked')?.value;
-
-    // VALIDATION
-    if (!service) {
-        alert("Please select a service.");
-        return;
-    }
-
-    if (!total) {
-        alert("Missing total price.");
-        return;
-    }
-
-    if (!paymentType) {
-        alert("Please select payment method (Cash or GCash).");
-        return;
-    }
-
-    // SAVE DATA
-    localStorage.setItem("total", totalPrice);
-    localStorage.setItem("service", selectedService);
-    localStorage.setItem("paymentType", paymentType);
-
-    // 🔥 REDIRECT LOGIC (IMPORTANT FIX)
-    if (paymentType === "gcash") {
-        window.location.href = "Payment.html";
-    } 
-    else if (paymentType === "cash") {
-        window.location.href = "Paymentcash.html";
-    }
-}
-
+/******************************** COMPUTE TOTAL PRICE ********************************/
 function computeTotal() {
-
   const guestInput = document.getElementById("guest-count");
-  const guests = parseInt(document.getElementById("guest-count").value);
+  const guests = parseInt(guestInput.value);
   const totalDisplay = document.querySelector(".total");
-
-  // ❗ if no number yet → show base price on select
-  if (!guests) {
-    if (selectedService.includes("coffee")) {
-      totalDisplay.innerHTML = "Estimated Total: ₱5,000";
-    } 
-    else if (selectedService.includes("matcha")) {
-      totalDisplay.innerHTML = "Estimated Total: ₱9,000";
-    }
-    return;
-  }
-
-  // ❌ VALIDATION
-  if (guests < 30) {
-    totalDisplay.innerHTML = "Minimum of 30 guests required.";
-    return;
-  }
-
-  if (guests > 100) {
-    totalDisplay.innerHTML = "Maximum of 100 guests required.";
-    return;
-  }
 
   if (!selectedService) {
     totalDisplay.innerHTML = "Please select a service first.";
+    window.finalTotal = 0;
+    return;
+  }
+
+  if (!guests) {
+    if (selectedService === "coffee") totalDisplay.innerHTML = "Estimated Total: ₱5,000";
+    else if (selectedService === "matcha") totalDisplay.innerHTML = "Estimated Total: ₱9,000";
+    else if (selectedService === "tattoo") totalDisplay.innerHTML = "Estimated Total: ₱1,000";
+    window.finalTotal = 0;
+    return;
+  }
+
+  if (guests < 30) {
+    totalDisplay.innerHTML = "Minimum of 30 guests required.";
+    window.finalTotal = 0;
+    return;
+  }
+  if (guests > 100) {
+    totalDisplay.innerHTML = "Maximum of 100 guests only.";
+    window.finalTotal = 0;
     return;
   }
 
   let total = 0;
-
-  // ☕ COFFEE BOOTH (YOUR EXACT TABLE)
-  if (selectedService.includes("coffee")) {
-
-    const base = 3450;
-
-    if (guests === 30) {
-      total = base;
-    }
-
-    else if (guests < 50) {
-      total = base + ((guests - 30) * 120);
-    }
-
-    else if (guests === 50) {
-      total = 5000; // 🔥 FIXED CAP (no more 5850 bug)
-    }
-
-    else {
-      // 🔥 AFTER 50 → NEW RATE (₱80)
-      total = 5000 + ((guests - 50) * 80);
-    }
-  }
-
-  // 🍵 MATCHA BOOTH (YOUR EXACT TABLE)
-  else if (selectedService.includes("matcha")) {
-
-    const base = 3450;
-
-    if (guests === 30) {
-      total = base;
-    }
-
-    else {
-      total = base + ((guests - 30) * 80);
-
-      // 🔥 CAP AT 9000
-      if (total > 9000) {
-        total = 9000;
-      }
-    }
-  }
-
-  // 🎨 TATTOO
-  else if (selectedService.includes("tattoo")) {
+  if (selectedService === "coffee") {
+    if (guests === 30) total = 3450;
+    else if (guests < 50) total = 3450 + ((guests - 30) * 120);
+    else if (guests === 50) total = 5000;
+    else total = 5000 + ((guests - 50) * 80);
+  } else if (selectedService === "matcha") {
+    total = 3450 + ((guests - 30) * 80);
+    if (total > 9000) total = 9000;
+  } else if (selectedService === "tattoo") {
     total = 1000;
   }
 
   totalDisplay.innerHTML = `
-    Estimated Total: ₱${total.toLocaleString()}<br>
-    <small style="color:#666;">
-      Final price subject to confirmation by Cafe Bella
-    </small>
+    <strong>Estimated Total: ₱${total.toLocaleString()}</strong><br>
+    <small style="color:#666;">Final price subject to confirmation by Cafe Bella</small>
   `;
-
   window.finalTotal = total;
 }
 
@@ -1493,86 +1246,127 @@ contactInput.addEventListener("paste", function(e) {
         contactInput.value = pasteData.slice(0, 11);
     }
 });
-const completeBtn = document.getElementById("complete-booking");
+/******************************** COMPLETE BOOKING ACTION ********************************/
+document.getElementById("complete-booking").addEventListener("click", function() {
+  // Kunin ang lahat ng values nang tama
+  const fullName = document.querySelector('input[placeholder*="Full Name"]').value.trim();
+  const email = document.querySelector('input[type="email"]').value.trim();
+  const facebook = document.querySelector('input[placeholder*="@username"]').value.trim();
+  const contact = contactInput.value.trim();
+  const eventTime = document.getElementById("event-time").value;
+  const provinceSelect = document.getElementById("province");
+  const citySelect = document.getElementById("city");
+  const barangaySelect = document.getElementById("barangay");
+  const zipCode = document.getElementById("zip_code").value.trim();
+  const streetAddress = document.getElementById("street").value.trim();
+  const paymentType = document.querySelector('input[name="payment_type"]:checked')?.value;
+  const paymentMethod = document.querySelector('input[name="pay"]:checked')?.value;
+  const notes = document.querySelector('textarea').value.trim();
+  const agree = document.getElementById("agree").checked;
 
-completeBtn.addEventListener("click", function() {
+  // ✅ VALIDATION
+  if (!fullName) return alert("Please enter your Full Name.");
+  if (!email) return alert("Please enter your Email Address.");
+  if (!facebook) return alert("Please enter your Facebook/Messenger.");
+  if (!contact || contact.length < 10) return alert("Please enter a valid Contact Number.");
+  if (!selectedDate) return alert("Please select an Event Date.");
+  if (!eventTime) return alert("Please select an Event Time.");
+  if (!provinceSelect.value) return alert("Please select a Province.");
+  if (!citySelect.value) return alert("Please select a City/Municipality.");
+  if (!barangaySelect.value) return alert("Please select a Barangay.");
+  if (!zipCode) return alert("Please enter your Zip Code.");
+  if (!streetAddress) return alert("Please enter your complete Address.");
+  if (!paymentType) return alert("Please select Payment Type.");
+  if (!paymentMethod) return alert("Please select Payment Method.");
+  if (!agree) return alert("You must agree to Terms and Conditions.");
+  if (!window.finalTotal || window.finalTotal <= 0) return alert("Total amount is invalid. Please select service and enter guests.");
 
-    const fullName = document.querySelector('input[placeholder*="Full Name"]').value.trim();
-    const email = document.querySelector('input[placeholder*="example"]').value.trim();
-    const facebook = document.querySelector('input[placeholder*="@username"]').value.trim();
-    const contact = contactInput.value.trim();
-    const eventTime = document.getElementById("event-time").value;
+  // ✅ Ihanda ang data
+  const serviceName = selectedService === "coffee" ? "Coffee Booth" :
+                      selectedService === "matcha" ? "Matcha Booth" : "Tattoo Event";
 
-    const provinceSelect = document.getElementById("province");
-    const citySelect = document.getElementById("city");
-    const barangaySelect = document.getElementById("barangay");
-    const street = document.getElementById("street").value;
+  const formData = new FormData();
+  formData.append("full_name", fullName);
+  formData.append("email", email);
+  formData.append("facebook", facebook);
+  formData.append("contact_number", contact);
+  formData.append("service", serviceName);
+  formData.append("guest_count", document.getElementById("guest-count").value);
+  formData.append("total_amount", window.finalTotal);
+  formData.append("event_date", selectedDate);
+  formData.append("event_time", eventTime);
+  formData.append("province", provinceSelect.options[provinceSelect.selectedIndex].dataset.name);
+  formData.append("city", citySelect.options[citySelect.selectedIndex].dataset.name);
+  formData.append("barangay", barangaySelect.value);
+  formData.append("zip_code", zipCode);
+  formData.append("street_address", streetAddress);
+  formData.append("payment_type", paymentType === "full" ? "Full Payment" : "Reservation Fee Only");
+  formData.append("payment_method", paymentMethod.toUpperCase());
+  formData.append("additional_notes", notes);
 
-    // ✔ GET REAL NAMES (hindi code)
-    const province = provinceSelect.options[provinceSelect.selectedIndex].dataset.name;
-    const city = citySelect.options[citySelect.selectedIndex].dataset.name;
-    const barangay = barangaySelect.value;
-
-    // ✔ FINAL FORMAT
-    const eventLocation = `Province: ${province}, City: ${city}, Barangay: ${barangay}, Street: ${street}`;
-
-
-    const paymentType = document.querySelector('input[name="payment_type"]:checked')?.value;
-    const paymentMethod = document.querySelector('input[name="pay"]:checked')?.value;
-
-    const agree = document.getElementById("agree").checked;
-
-    // ✅ VALIDATIONS
-    if(!fullName) return alert("Enter Full Name");
-    if(!email) return alert("Enter Email");
-    if(!facebook) return alert("Enter Facebook");
-    if(!contact) return alert("Enter Contact Number");
-    if(!selectedDate) return alert("Select a Date");
-    if(!eventTime) return alert("Select Time");
-    if(!selectedService) return alert("Please select a service.");
-    if(!paymentType) return alert("Please select a payment type.");
-    if(!paymentMethod) return alert("Please select payment method.");
-    if(!agree) return alert("You must agree to the terms.");
-
-    // ✅ SAVE DATA
-    let serviceName = "";
-
-    if(selectedService === "coffee") serviceName = "Coffee Booth";
-    else if(selectedService === "matcha") serviceName = "Matcha Booth";
-    else if(selectedService === "tattoo") serviceName = "Tattoo Event";
-
-    localStorage.setItem("service", serviceName);
-    localStorage.setItem("paymentMethod", paymentMethod);
-    localStorage.setItem("paymentType", paymentType);
-    localStorage.setItem("total", window.finalTotal);
-    localStorage.setItem("customerName", fullName);
-    localStorage.setItem("customerEmail", email);
-    localStorage.setItem("customerFacebook", facebook);
-    localStorage.setItem("customerContact", contact);
-    localStorage.setItem("eventDate", selectedDate);
-    localStorage.setItem("eventTime", eventTime);
+  // ✅ Ipadala sa tamang lokasyon
+  fetch("website_php/process_booking.php", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.text())
+  .then(response => {
+    response = response.trim();
+    if (response === "success") {
+      if (paymentMethod === "cash") {
+        window.location.href = "Paymentcash.php";
+      } else if (paymentMethod === "gcash") {
+        window.location.href = "Payment.php";
+      }
+    } else {
+      alert("Error: " + response);
+    }
+  })
+  .catch(err => {
+    alert("Connection error: Check if server is running and process_booking.php exists.");
+    console.error(err);
+  });
+});
 
 
-    const guests = parseInt(document.getElementById("guest-count").value);
+/******************************** AUTO-SELECT SERVICE FROM PACKAGE PAGE ********************************/
+document.addEventListener("DOMContentLoaded", function() {
+    const savedService = localStorage.getItem("selectedService");
 
-    localStorage.setItem("guestCount", guests);
+    if (savedService) {
+        const serviceBoxes = document.querySelectorAll(".service-box");
 
-    const formattedLocation = `Province: ${province}, City: ${city}, Barangay: ${barangay}, Street: ${street}`;
+        // Ibalik sa normal ang lahat
+        serviceBoxes.forEach(box => {
+            box.style.background = "white";
+            box.style.color = "#114500";
+            box.style.pointerEvents = "auto";
+            box.style.opacity = "1";
+        });
 
-    localStorage.setItem("eventLocation", formattedLocation);
+        // Hanapin at i-highlight ang napiling service
+        serviceBoxes.forEach(box => {
+            const title = box.querySelector(".service-title").textContent.toLowerCase();
 
-    // ✅ REDIRECT
-    console.log("METHOD:", paymentMethod);
+            if (
+                (savedService === "coffee" && title.includes("coffee")) ||
+                (savedService === "matcha" && title.includes("matcha")) ||
+                (savedService === "tattoo" && title.includes("tattoo"))
+            ) {
+                box.style.background = "#114500";
+                box.style.color = "white";
+                selectedService = savedService;
 
-    if(paymentMethod === "cash") {
-        window.location.href = "Paymentcash.html";
-    } 
-    else if(paymentMethod === "gcash") {
-        window.location.href = "Payment.html";
+                // Ipakita agad ang tamang presyo
+                computeTotal();
+            }
+        });
+
+        // Burahin mula sa storage para hindi maulit sa susunod
+        localStorage.removeItem("selectedService");
     }
 });
 
-/******************************** PHILIPPINE AUTO-LOAD ADDRESS (MODIFIED FOR CALABARZON) **********/    
 /******************************** PHILIPPINE AUTO-LOAD ADDRESS (MODIFIED FOR CALABARZON) **********/
     const provinceSelect = document.getElementById("province");
     const citySelect = document.getElementById("city");
