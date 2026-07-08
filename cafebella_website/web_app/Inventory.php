@@ -3,6 +3,16 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 require_once '../website_php/auth_check.php'; 
+
+require_admin_or_staff();
+
+// Get current user's full name and role for greeting
+$user_stmt = $pdo->prepare("SELECT full_name, role FROM users WHERE id = ?");
+$user_stmt->execute([$_SESSION['user_id']]);
+$current_user_details = $user_stmt->fetch(PDO::FETCH_ASSOC);
+
+// Set greeting text based on role
+$greeting_role = ($current_user_details['role'] === 'Admin') ? 'Admin' : 'Staff';
 ?>
 
 <!DOCTYPE html>
@@ -672,12 +682,14 @@ body {
     <div class="sidebar">
       <div class="admin-header">
         <img src="IMAGES/cafebella.jpg" alt="Logo">
-        <h2>Hello, Admin!</h2>
+        <h2>Hello, <?= htmlspecialchars($greeting_role) ?>!</h2>
       </div>
 
 <!--------------------------------------- MENU SIDEBAR ---------------------------------------------> 
     <div class="menu">
+      <?php if(isAdmin()): ?>
       <button data-page="Dashboard.php"><img src="IMAGES/dashboardpic.png" class="icon">Dashboard</button>
+      <?php endif; ?>
 
       <?php if(isAdmin()): ?>
       <button data-page="Calendar.php"><img src="IMAGES/calendaricon.png" class="icon">Calendar</button>
@@ -730,7 +742,7 @@ body {
       <img src="IMAGES/cafebella.jpg" alt="Admin">
       <div class="admin-info">
         <span class="admin-name">Admin</span>
-        <span class="admin-role">Administrator</span>
+        <span class="admin-role"><?= htmlspecialchars($current_user_details['role']) ?></span>
       </div>
       <span class="arrow">▼</span>
       <div id="adminDropdown" class="dropdown">
@@ -757,11 +769,14 @@ body {
 </div>
 
 <!-- ADD ITEM BUTTON -->
+ <?php if(isAdmin()): ?>
 <div class="inventory-actions">
   <button class="add-btn" onclick="openModal()">
     <i class="fa-solid fa-plus"></i> Add Item
   </button>
 </div>
+<?php endif; ?>
+
 <!-- INVENTORY TABLE -->
 <div class="inventory-container">
 
@@ -1259,7 +1274,7 @@ updateAllTotalValues();
 // --------------------------
 async function loadInventory() {
   try {
-    const response = await fetch('../website_php/inventory_api.php');
+    const response = await fetch('webapp_php/inventory_api.php');
     const result = await response.json();
 
     if (result.status === 'success') {
@@ -1340,7 +1355,7 @@ async function addItem() {
     formData.append('cost', cost);
     formData.append('reorder_level', reorder);
 
-    const response = await fetch('../website_php/inventory_api.php', {
+    const response = await fetch('webapp_php/inventory_api.php', {
       method: 'POST',
       body: formData
     });
@@ -1377,7 +1392,7 @@ async function saveRow(row, btn) {
   }
 
   try {
-    const response = await fetch('../website_php/inventory_api.php', {
+    const response = await fetch('webapp_php/inventory_api.php', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `id=${id}&item_name=${encodeURIComponent(name)}&categories=${encodeURIComponent(category)}&supplier=${encodeURIComponent(supplier)}&unit=${encodeURIComponent(unit)}&stock=${stock}&cost=${cost}&reorder_level=${reorder}`
@@ -1404,7 +1419,7 @@ async function restockItem(btn) {
   const newStock = currentStock + 5;
 
   try {
-    const response = await fetch('../website_php/inventory_api.php', {
+    const response = await fetch('webapp_php/inventory_api.php', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `id=${id}&stock=${newStock}&update_stock_only=1`
