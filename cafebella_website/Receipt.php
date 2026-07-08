@@ -1,18 +1,15 @@
 <?php
-// Simulan ang session para mabasa ang datos
 session_start();
 
-// Kung walang datos, ibalik sa pahina ng pag-book
+// ✅ Check lang kung may booking at receipt code
 if (!isset($_SESSION['booking_data']) || !isset($_SESSION['receipt_code'])) {
-    header("Location: Bookyourevent.html");
+    header("Location: Bookyourevent.php");
     exit;
 }
 
-// Kunin ang lahat ng impormasyon
 $booking = $_SESSION['booking_data'];
 $receipt_code = $_SESSION['receipt_code'];
 
-// Ihanda ang mga halaga
 $reservation_fee = ($booking['service_type'] === "Tattoo Event") ? 0 : 2000;
 if ($booking['payment_type'] === "Full Payment") {
     $amount_paid = $booking['total_amount'];
@@ -22,7 +19,6 @@ if ($booking['payment_type'] === "Full Payment") {
     $remaining_balance = $booking['total_amount'] - $reservation_fee;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
