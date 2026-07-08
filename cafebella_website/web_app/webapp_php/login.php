@@ -37,7 +37,14 @@ try {
     $_SESSION['user_name'] = $user['full_name'];
     $_SESSION['user_role'] = $user['role'];
 
-    echo json_encode(["success"=>true,"message"=>"Login successful"]);
+    // ✅ Set landing page: Admin → Dashboard, Staff → POS
+    $redirect_url = ($user['role'] === 'Admin') ? 'Dashboard.php' : 'POS.php';
+
+    echo json_encode([
+        "success" => true,
+        "message" => "Login successful",
+        "redirect_url" => $redirect_url // Send URL to frontend
+    ]);
 
 } catch(PDOException $e) {
     echo json_encode(["success"=>false,"message"=>$e->getMessage()]);
