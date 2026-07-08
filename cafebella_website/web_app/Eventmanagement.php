@@ -5,6 +5,8 @@ if (session_status() == PHP_SESSION_NONE) {
 require_once '../website_php/auth_check.php';
 require_once '../website_php/database.php';
 
+require_admin();
+
 $admin_count_stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'Admin' AND is_banned = 0 AND is_approved = 1");
 $active_admin_count = $admin_count_stmt->fetchColumn();
 
@@ -12,6 +14,13 @@ if (!isAdmin()) {
     header("Location: ../login.html?error=unauthorized_access");
     exit();
 }
+// Get current user's full name and role for greeting
+$user_stmt = $pdo->prepare("SELECT full_name, role FROM users WHERE id = ?");
+$user_stmt->execute([$_SESSION['user_id']]);
+$current_user_details = $user_stmt->fetch(PDO::FETCH_ASSOC);
+
+// Set greeting text based on role
+$greeting_role = ($current_user_details['role'] === 'Admin') ? 'Admin' : 'Staff';
 
 // Kumuha ng lahat ng booking mula sa database
 try {
@@ -29,7 +38,8 @@ try {
                 barangay,
                 street_address,
                 total_amount,
-                status,
+                booking_status AS status,
+                payment_method,
                 payment_type,
                 payment_reference,
                 additional_notes,
@@ -52,8 +62,8 @@ try {
         $total_sales += $e['total_amount'];
 
         // Ayusin ang status base sa petsa at status
-        if ($e['status'] === 'Confirmed' && $e['event_date'] >= $today) {
-            $upcoming++;
+        if ($e['status'] === 'Accepted' && $e['event_date'] >= $today) {
+    $upcoming++;
         } elseif ($e['event_date'] < $today) {
             $completed++;
         }
@@ -1076,7 +1086,7 @@ body {
     <div class="sidebar">
       <div class="admin-header">
         <img src="IMAGES/cafebella.jpg" alt="Logo">
-        <h2>Hello, Admin!</h2>
+        <h2>Hello, <?= htmlspecialchars($greeting_role) ?>!</h2>
       </div>
 
 <!--------------------------------------- MENU SIDEBAR ---------------------------------------------> 
@@ -1113,7 +1123,7 @@ body {
       <img src="IMAGES/cafebella.jpg" alt="Admin">
       <div class="admin-info">
         <span class="admin-name">Admin</span>
-        <span class="admin-role">Administrator</span>
+        <span class="admin-role"><?= htmlspecialchars($current_user_details['role']) ?></span>
       </div>
       <span class="arrow">▼</span>
       <div id="adminDropdown" class="dropdown">
@@ -1224,7 +1234,7 @@ body {
                     if ($event['event_date'] < $today) {
                         $status = 'Completed';
                         $status_class = 'status-completed';
-                    } elseif ($event['status'] === 'Confirmed') {
+                    } elseif ($event['status'] === 'Accepted') {
                         $status = 'Upcoming';
                         $status_class = 'status-upcoming';
                     } else {
@@ -1453,8 +1463,8 @@ function viewEvent(i){
   if (e.event_date < today) {
       status = "Completed";
       statusClass = "status-completed";
-  } else if (e.status === "Confirmed") {
-      status = "Upcoming";
+  } else if (e.status === "Accepted") {
+    status = "Upcoming";
       statusClass = "status-upcoming";
   } else {
       status = e.status;
@@ -1565,7 +1575,8 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
 });
-renderEventsSorted(events);
+// ✅ TAMA: Gumamit ng tamang function na meron ka
+renderEvents();
 
 function openBoothModal(){
   document.getElementById("boothModal").style.display = "flex";
@@ -1806,6 +1817,4 @@ function updateStaffPreview(){
 function closeStaffModal(){
   document.getElementById("staffModal").style.display = "none";
 }
-
-
 </script>
