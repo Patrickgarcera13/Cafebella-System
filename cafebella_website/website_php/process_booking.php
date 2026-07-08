@@ -1,14 +1,8 @@
 <?php
-// Start session
-require_once 'database.php';
 session_start();
+header('Content-Type: application/json; charset=utf-8');
 
-// Set response type
-header('Content-Type: text/plain; charset=utf-8');
-
-// --------------------------
-// 1. Get all submitted data
-// --------------------------
+// Kunin lahat ng data mula sa form
 $full_name        = trim($_POST['full_name'] ?? '');
 $email            = trim($_POST['email'] ?? '');
 $facebook         = trim($_POST['facebook'] ?? '');
@@ -27,25 +21,24 @@ $payment_type     = trim($_POST['payment_type'] ?? '');
 $payment_method   = trim($_POST['payment_method'] ?? '');
 $additional_notes = trim($_POST['additional_notes'] ?? '');
 
-// --------------------------
-// 2. Basic validation
-// --------------------------
+// Validation
 if (
     empty($full_name) || empty($email) || empty($contact_number) ||
-    empty($service_type) || $guest_count < 30 || $total_amount <= 0 ||
+    empty($service_type) || $guest_count < 1 || $total_amount <= 0 ||
     empty($event_date) || empty($event_time) || empty($province) ||
     empty($city) || empty($barangay) || empty($zip_code) || empty($street_address) ||
     empty($payment_type) || empty($payment_method)
 ) {
-    echo "error: Missing or invalid required fields";
+    echo json_encode(["status" => "error", "message" => "Punan lahat ng kailangang patlang"]);
     exit;
 }
 
-// --------------------------
-// 3. Store ALL data in SESSION
-// --------------------------
+// Unique receipt code
+$receipt_code = 'CB-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
+
+// ✅ IHO-HOLD LANG SA SESSION — WALANG DATABASE DITO!
 $_SESSION['booking_data'] = [
-    'receipt_code'       => '', // Will be generated later when saving
+    'receipt_code'       => $receipt_code,
     'full_name'          => $full_name,
     'email'              => $email,
     'facebook'           => $facebook,
@@ -62,13 +55,17 @@ $_SESSION['booking_data'] = [
     'street_address'     => $street_address,
     'payment_type'       => $payment_type,
     'payment_method'     => $payment_method,
-    'payment_reference'  => '', // Will be filled after payment
+    'payment_reference'  => '',
     'additional_notes'   => $additional_notes,
-    'status'             => 'Pending' // Default status
+    'booking_status'     => 'Pending'
 ];
 
-// --------------------------
-// 4. Send success response back to JS
-// --------------------------
-echo "success";
+// Itakda kung saang pahina pupunta
+$next_page = ($payment_method === "CASH") ? "Paymentcash.php" : "Payment.php";
+
+echo json_encode([
+    "status" => "success",
+    "next_page" => $next_page,
+    "receipt_code" => $receipt_code
+]);
 ?>
