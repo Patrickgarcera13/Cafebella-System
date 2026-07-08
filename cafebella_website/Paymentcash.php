@@ -4,7 +4,7 @@ session_start();
 
 // Kung walang booking data, ibalik sa pahina ng pag-book
 if (!isset($_SESSION['booking_data'])) {
-    header("Location: Bookyourevent.html");
+    header("Location: Bookyourevent.php");
     exit;
 }
 
@@ -800,29 +800,31 @@ document.addEventListener("DOMContentLoaded", function() {
 /******************************** CONFIRM PAYMENT & SAVE TO DATABASE ********************************/
 function confirmPayment() {
     const refNumber = document.getElementById("ref-input").value.trim();
-
     if (!refNumber) {
-        alert("Please enter or confirm your reference number.");
+        alert("Please enter your reference number.");
         return;
     }
 
     const formData = new FormData();
     formData.append("payment_reference", refNumber);
-    formData.append("payment_method", "CASH");
 
     fetch("website_php/process_payment.php", {
         method: "POST",
         body: formData
     })
-    .then(res => res.text())
-    .then(response => {
-        if (response.trim() === "success") {
-            window.location.href = "Receipt.php";
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            alert("✅ Saved successfully! Opening Receipt...");
+            window.location.href = data.redirect;
         } else {
-            alert("Error: " + response);
+            alert("❌ " + data.message); // ✅ Makikita mo na kung ano talaga ang mali
         }
     })
-    .catch(err => alert("Connection error: " + err));
+    .catch(err => {
+        alert("❌ Connection Error: " + err.message);
+        console.error(err);
+    });
 }
 </script>
 
