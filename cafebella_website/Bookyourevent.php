@@ -1,3 +1,7 @@
+<?php
+// ✅ Gawing PHP para sa seguridad at tamang koneksyon
+require __DIR__ . '/website_php/database.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -706,7 +710,7 @@ h1 {
 
 <!-------------------------------- TOPBAR ------------------------------------->
 <div class="topbar">
-      <div class="topbar-center">Planning an event? <a href="Bookyourevent.html" class="book-link">Book Now</a> and reserve your date with Cafe Bella.</div>
+      <div class="topbar-center">Planning an event? <a href="Bookyourevent.php" class="book-link">Book Now</a> and reserve your date with Cafe Bella.</div>
 
   <div class="topbar-right">
     <img src="https://cdn-icons-png.flaticon.com/512/733/733547.png">
@@ -717,14 +721,14 @@ h1 {
 <!-------------------------------- NAVBAR ------------------------------------->
   <div class="navbar">
     <div class="nav-logo">
-      <a href="index.html">
+      <a href="index.php">
       <img src="IMAGES/Cafebella.jpg" alt="Cafe Bella Logo"></a>
   </div>
 
   <ul class="nav-menu">
-      <li><a href="index.html">Home</a></li>
-      <li><a href="Menu.html">Menu</a></li>
-      <li><a href="Package.html" class="active">Packages</a></li>
+      <li><a href="index.php">Home</a></li>
+      <li><a href="Menu.php">Menu</a></li>
+      <li><a href="Package.php" class="active">Packages</a></li>
       <li><a href="Location.html">Location</a></li>
       <li><a href="FAQ.html">FAQs</a></li>
   </ul>
@@ -742,20 +746,20 @@ h1 {
     <div class="section-title rise-item">Customer Details</div>
 
     <label>Full Name</label>
-    <input type="text" 
-       placeholder="Enter your Full Name" 
+    <input type="text" name="full_name" placeholder="Enter your Full Name" 
        required 
        pattern="[A-Za-z\s]+" 
        title="Please enter your full name using letters only">
 
     <label>Email Address</label>
-      <input type="email" placeholder="example@hotmail.com" required 
+      <input type="email" name="email" placeholder="example@hotmail.com" required 
        pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" 
        title="Please enter a valid email, e.g., example@hotmail.com">
     <div class="row">
       <div style="flex:1;">
+
         <label>Facebook / Messenger</label>
-        <input type="text" 
+        <input type="text" name="facebook"
        placeholder="@username" 
        pattern="^@[\w]+$" 
        title="Enter a valid username starting with @" 
@@ -767,6 +771,7 @@ h1 {
         <label>Contact Number</label>
         <input type="tel" 
           id="contact-number"
+          name="contact_number"
           placeholder="e.g. 09123456789" 
           pattern="[0-9]{10,11}" 
           inputmode="numeric"
@@ -778,41 +783,13 @@ h1 {
   
 <!-------------------------------- SERVICE COLLECTION ------------------------------------->
 <div class="card rise-item">
-    <div class="section-title">Service Selection</div>
-
-<div class="services rise-item">
-
-  <!-- ☕ COFFEE -->
-  <div class="service-box">
-    <div class="service-title">Coffee Booth</div>
-    <div class="price">
-      ₱5,000 — Up to 50 cups<br>
-      <small>Price adjusts based on number of cups ordered</small>
-    </div>
+  <div class="section-title">Service Selection</div>
+  <div class="services rise-item" id="servicesContainer">
+    <!-- Services load dynamically from database -->
   </div>
-
-  <!-- 🍵 MATCHA -->
-  <div class="service-box">
-    <div class="service-title">Matcha Booth</div>
-    <div class="price">
-      ₱9,000 — Up to 100 cups<br>
-      <small>Price adjusts based on number of cups ordered</small>
-    </div>
-  </div>
-
-  <!-- 🎨 TATTOO -->
-  <div class="service-box">
-    <div class="service-title">Tattoo Event</div>
-    <div class="price">
-      ₱1,000 — In-store service only<br>
-      Includes 2 minimalist tattoos
-    </div>
-  </div>
-
+  <div class="total" id="totalDisplay">₱ 0000</div>
+  <div id="guestMessage" style="font-size:13px; margin-top:8px; color:#d32f2f; display:none;"></div>
 </div>
-
-    <div class="total">₱ 0000</div>
-  </div>
 <!-------------------------------- BOOKING DETAILS ------------------------------------->
 <div class="card rise-item">
 
@@ -927,12 +904,12 @@ h1 {
   <div class="payment-options">
 
     <label class="payment-box rise-item">
-      <input type="radio" name="payment_type" value="full">
+      <input type="radio" name="payment_type" value="Full Payment">
       <span>Full Payment</span>
     </label>
 
     <label class="payment-box rise-item">
-      <input type="radio" name="payment_type" value="reservation">
+      <input type="radio" name="payment_type" value="Reservation Fee Only">
       <span>Reservation Fee Only</span>
     </label>
 
@@ -942,12 +919,12 @@ h1 {
   <label style="margin-top:20px;">Select Payment Option</label>
   <div class="payment-options rise-item">
     <label class="payment-box">
-      <input type="radio" name="pay" value="cash">
+      <input type="radio" name="payment_method" value="CASH">
       <span>Cash</span>
     </label>
 
     <label class="payment-box rise-item">
-      <input type="radio" name="pay" value="gcash">
+      <input type="radio" name="payment_method" value="GCASH">
       <span>GCash</span>
     </label>
   </div>
@@ -959,7 +936,7 @@ h1 {
   <div class="section-title">Preferences & Customization</div>
 
   <label>Additional Notes</label>
-  <textarea placeholder="Any other requests or instructions"></textarea>
+  <textarea name="additional_notes" placeholder="Any other requests or instructions"></textarea>
 
 </div>
 
@@ -1024,9 +1001,9 @@ h1 {
 
     <div class="footer-col rise-item">
       <h4>Quick Links</h4>
-      <a href="index.html">Home</a>
-      <a href="Menu.html">Menu</a>
-      <a href="Package.html">Event Packages</a>
+      <a href="index.php">Home</a>
+      <a href="Menu.php">Menu</a>
+      <a href="Package.php">Event Packages</a>
       <a href="#">Feedback</a>
       <a href="#">Location</a>
       <a href="#">FAQ's</a>
@@ -1034,9 +1011,9 @@ h1 {
 
     <div class="footer-col rise-item">
       <h4>Services</h4>
-      <a href="Package.html">Coffee Booth</a>
-      <a href="Package.html">Matcha Booth</a>
-      <a href="Package.html">Tattoo Event</a>
+      <a href="Package.php">Coffee Booth</a>
+      <a href="Package.php">Matcha Booth</a>
+      <a href="Package.php">Tattoo Event</a>
     </div>
 
     <div class="footer-col rise-item">
@@ -1065,388 +1042,324 @@ h1 {
 </body>
 
 <script>
-
 let selectedService = "";
 let selectedDate = "";
+let packagesData = [];
+let currentPricing = null;
 
 /******************************** CONSISTENT RISE ANIMATION ********************************/
-
 const riseElements = document.querySelectorAll(".rise-title, .rise-desc, .rise-item, .event-card");
-
 function handleRise() {
   const triggerPoint = window.innerHeight * 0.85;
-
-  riseElements.forEach(el => {
-    const elementTop = el.getBoundingClientRect().top;
-
-    if (elementTop < triggerPoint) {
-      el.classList.add("show");
-    } else {
-      el.classList.remove("show");
-    }
-  });
+  riseElements.forEach(el => el.classList.toggle("show", el.getBoundingClientRect().top < triggerPoint));
 }
-
 window.addEventListener("scroll", handleRise);
 window.addEventListener("load", handleRise);
 
-/******************************** SERVICES SELECTION **************************/
-
-window.onload = function () {
-  const boxes = document.querySelectorAll(".service-box");
-  const guestInput = document.getElementById("guest-count");
-
-  boxes.forEach(box => {
-    box.addEventListener("click", () => {
-      boxes.forEach(b => {
-        b.style.background = "white";
-        b.style.color = "#114500";
-      });
-
-      box.style.background = "#114500";
-      box.style.color = "white";
-
-      let rawService = box.querySelector(".service-title").textContent.toLowerCase().trim();
-      if (rawService.includes("coffee")) selectedService = "coffee";
-      else if (rawService.includes("matcha")) selectedService = "matcha";
-      else if (rawService.includes("tattoo")) selectedService = "tattoo";
-
-      computeTotal();
+/******************************** LOAD PACKAGES DYNAMICALLY FROM DATABASE ********************************/
+function loadPackages() {
+  // ✅ SIGURADONG TAMA ANG PATH
+  fetch('website_php/process_packages.php')
+    .then(async res => {
+      if (!res.ok) throw new Error("Server error: " + res.status);
+      const text = await res.text();
+      // ✅ Ayusin ang mga backslash sa path bago i-parse
+      const fixedText = text.replace(/\\\\/g, '/');
+      return JSON.parse(fixedText);
+    })
+    .then(data => {
+      if (!Array.isArray(data)) throw new Error("Hindi array ang natanggap");
+      packagesData = data;
+      renderServices();
+      autoSelectFromPackagePage();
+      // ✅ Itago ang error alert kung sakaling luma pa
+      console.log("✅ Matagumpay na na-load ang packages:", data);
+    })
+    .catch(err => {
+      console.error("❌ Error loading packages:", err);
+      // ✅ TANGGALIN MUNA ANG ALERT habang nag-aayos, o i-update ang mensahe
+      // alert("Failed to load services. Please refresh the page.");
     });
+}
+
+function renderServices() {
+  const container = document.getElementById('servicesContainer');
+  container.innerHTML = '';
+  
+  packagesData.forEach(pkg => {
+    if (pkg.status !== 'active') return;
+
+let serviceFullName = "";
+if (pkg.service_name.toLowerCase().includes('coffee')) serviceFullName = "Coffee Booth";
+else if (pkg.service_name.toLowerCase().includes('matcha')) serviceFullName = "Matcha Booth";
+else if (pkg.service_name.toLowerCase().includes('tattoo')) serviceFullName = "Tattoo Event";
+
+const serviceKey = pkg.service_name.toLowerCase().includes('coffee') ? 'coffee' : 
+                  pkg.service_name.toLowerCase().includes('matcha') ? 'matcha' : 'tattoo';
+    const box = document.createElement('div');
+    box.className = 'service-box';
+    box.dataset.service = serviceKey;
+    box.dataset.fullname = serviceFullName;
+    box.dataset.pricing = JSON.stringify({
+      base: pkg.base_price,
+      min: pkg.min_guests,
+      max: pkg.max_guests,
+      breakAt: pkg.break_point,
+      breakPrice: pkg.break_price,
+      extra: pkg.extra_per_guest,
+      maxTotal: pkg.max_total
+    });
+    
+    box.innerHTML = `
+      <div class="service-title">${pkg.title}</div>
+      <div class="price">
+        ${pkg.display_price}<br>
+        <small>${pkg.description.substring(0, 70)}...</small>
+      </div>
+    `;
+    
+    box.addEventListener('click', () => selectServiceBox(box, serviceKey));
+    container.appendChild(box);
   });
+}
 
-  guestInput.addEventListener("input", computeTotal);
-  guestInput.addEventListener("keydown", e => { if (e.key === "Enter") computeTotal(); });
-};
+function selectServiceBox(box, serviceKey) {
+  document.querySelectorAll('.service-box').forEach(b => {
+    b.style.background = "white";
+    b.style.color = "#114500";
+  });
+  
+  box.style.background = "#114500";
+  box.style.color = "white";
+  selectedService = box.dataset.fullname;
+  currentPricing = JSON.parse(box.dataset.pricing);
+  
+  const guestInput = document.getElementById("guest-count");
+  guestInput.min = currentPricing.min;
+  guestInput.max = currentPricing.max;
+  guestInput.placeholder = `Enter ${currentPricing.min}-${currentPricing.max} guests`;
+  document.querySelector('small[style*="Minimum"]').textContent = `Minimum of ${currentPricing.min} guests required`;
+  
+  computeTotal();
+}
 
-/******************************** COMPUTE TOTAL PRICE ********************************/
+/******************************** AUTO-SELECT SERVICE GALING PACKAGE.PHP ********************************/
+function autoSelectFromPackagePage() {
+  const savedService = localStorage.getItem("selectedService");
+  if (savedService) {
+    setTimeout(() => {
+      const targetBox = document.querySelector(`.service-box[data-service="${savedService}"]`);
+      if (targetBox) selectServiceBox(targetBox, savedService);
+      localStorage.removeItem("selectedService");
+    }, 100);
+  }
+}
+
+/******************************** 100% DATABASE-DRIVEN PRICE CALCULATION ********************************/
 function computeTotal() {
   const guestInput = document.getElementById("guest-count");
-  const guests = parseInt(guestInput.value);
-  const totalDisplay = document.querySelector(".total");
+  const guests = parseInt(guestInput.value) || 0;
+  const totalDisplay = document.getElementById("totalDisplay");
+  const messageBox = document.getElementById("guestMessage");
 
-  if (!selectedService) {
+  if (!selectedService || !currentPricing) {
     totalDisplay.innerHTML = "Please select a service first.";
+    messageBox.style.display = "none";
     window.finalTotal = 0;
     return;
   }
 
-  if (!guests) {
-    if (selectedService === "coffee") totalDisplay.innerHTML = "Estimated Total: ₱5,000";
-    else if (selectedService === "matcha") totalDisplay.innerHTML = "Estimated Total: ₱9,000";
-    else if (selectedService === "tattoo") totalDisplay.innerHTML = "Estimated Total: ₱1,000";
+  // I-reset ang mensahe
+  messageBox.style.display = "none";
+
+  // Validation para sa bilang ng bisita
+  if (guests > 0) {
+    if (guests < currentPricing.min) {
+      messageBox.textContent = `⚠️ Minimum of ${currentPricing.min} guests required.`;
+      messageBox.style.display = "block";
+    } else if (guests > currentPricing.max) {
+      messageBox.textContent = `⚠️ Maximum of ${currentPricing.max} guests only.`;
+      messageBox.style.display = "block";
+    }
+  }
+
+  // Fixed price packages (tattoo)
+  if (currentPricing.extra === 0) {
+    window.finalTotal = currentPricing.base;
+    totalDisplay.innerHTML = `<strong>Estimated Total: ₱${window.finalTotal.toLocaleString()}</strong><br><small style="color:#666;">Final price subject to confirmation by Cafe Bella</small>`;
+    return;
+  }
+
+  // Kung hindi pasok sa saklaw, ipakita lang ang base price pero walang final total
+  if (!guests || guests < currentPricing.min || guests > currentPricing.max) {
+    totalDisplay.innerHTML = `<strong>Starting Price: ₱${currentPricing.base.toLocaleString()}</strong>`;
     window.finalTotal = 0;
     return;
   }
 
-  if (guests < 30) {
-    totalDisplay.innerHTML = "Minimum of 30 guests required.";
-    window.finalTotal = 0;
-    return;
+  // Compute based on database rules
+  let total = currentPricing.base;
+  
+  if (currentPricing.breakAt > 0 && guests === currentPricing.breakAt) {
+    total = currentPricing.breakPrice;
+  } else if (guests > currentPricing.min) {
+    total += (guests - currentPricing.min) * currentPricing.extra;
   }
-  if (guests > 100) {
-    totalDisplay.innerHTML = "Maximum of 100 guests only.";
-    window.finalTotal = 0;
-    return;
-  }
+  
+  if (currentPricing.maxTotal > 0) total = Math.min(total, currentPricing.maxTotal);
 
-  let total = 0;
-  if (selectedService === "coffee") {
-    if (guests === 30) total = 3450;
-    else if (guests < 50) total = 3450 + ((guests - 30) * 120);
-    else if (guests === 50) total = 5000;
-    else total = 5000 + ((guests - 50) * 80);
-  } else if (selectedService === "matcha") {
-    total = 3450 + ((guests - 30) * 80);
-    if (total > 9000) total = 9000;
-  } else if (selectedService === "tattoo") {
-    total = 1000;
-  }
-
-  totalDisplay.innerHTML = `
-    <strong>Estimated Total: ₱${total.toLocaleString()}</strong><br>
-    <small style="color:#666;">Final price subject to confirmation by Cafe Bella</small>
-  `;
+  totalDisplay.innerHTML = `<strong>Estimated Total: ₱${total.toLocaleString()}</strong><br><small style="color:#666;">Final price subject to confirmation by Cafe Bella</small>`;
   window.finalTotal = total;
 }
 
-/******************************** CALENDAR FLATPICKR **************************/
-    const bookedDates = [
-        "2026-03-01","2026-03-03","2026-03-05",
-        "2026-03-08","2026-03-10","2026-03-12",
-        "2026-03-15","2026-03-18","2026-03-22",
-        "2026-03-25"
-    ];
-
-    flatpickr("#calendar", {
-        inline: true,
-        minDate: "today",
-        disable: bookedDates,
-        dateFormat: "Y-m-d",
-        onDayCreate: function(dObj, dStr, fp, dayElem){
-            const date = dayElem.dateObj;
-            const formattedDate = fp.formatDate(date, "Y-m-d");
-            if(bookedDates.includes(formattedDate)){
-                dayElem.classList.add("booked-date");
-                dayElem.title = "Fully Booked";
-            }
-        },
-        onChange: function(selectedDates, dateStr){
-            selectedDate = dateStr;
-        }
+/******************************** CALENDAR: LOAD BOOKED DATES FROM DATABASE ********************************/
+let bookedDates = [];
+function loadBookedDates() {
+  fetch('website_php/process_booking.php?action=get_booked_dates')
+    .then(res => res.json())
+    .then(data => {
+      bookedDates = data.dates || [];
+      initCalendar();
+    })
+    .catch(() => {
+      bookedDates = ["2026-03-01","2026-03-03","2026-03-05","2026-03-08","2026-03-10","2026-03-12","2026-03-15","2026-03-18","2026-03-22","2026-03-25"];
+      initCalendar();
     });
+}
 
-/******************************** CONTACT NUMBER RESTRICTION **************************/
-const contactInput = document.querySelector('input[placeholder*="0912"]'); 
+function initCalendar() {
+  flatpickr("#calendar", {
+    inline: true,
+    minDate: "today",
+    disable: bookedDates,
+    dateFormat: "Y-m-d",
+    onChange: (_, dateStr) => { selectedDate = dateStr; }
+  });
+}
 
-const errorMsg = document.createElement("div");
-errorMsg.style.color = "red";
-errorMsg.style.fontSize = "12px";
-errorMsg.style.marginTop = "5px";
-contactInput.parentNode.insertBefore(errorMsg, contactInput.nextSibling);
-
-// BLOCK letters while typing
-contactInput.addEventListener("keypress", function(e) {
-    if(!/[0-9]/.test(e.key)) {
-        e.preventDefault();
-        errorMsg.textContent = "Numbers only are allowed";
-    } else {
-        errorMsg.textContent = "";
-    }
+/******************************** CONTACT NUMBER VALIDATION ********************************/
+const contactInput = document.getElementById("contact-number");
+contactInput.addEventListener("keypress", e => {
+  if (!/[0-9]/.test(e.key)) e.preventDefault();
+});
+contactInput.addEventListener("input", () => {
+  contactInput.value = contactInput.value.replace(/\D/g, '').slice(0, 11);
 });
 
-// LIMIT to 11 digits (MAIN FIX)
-contactInput.addEventListener("input", function() {
-    let value = contactInput.value;
-
-    // Remove non-numbers (extra safety)
-    value = value.replace(/\D/g, '');
-
-    // Limit to 11 digits
-    if (value.length > 11) {
-        value = value.slice(0, 11);
-    }
-
-    contactInput.value = value;
-});
-
-// BLOCK invalid paste
-contactInput.addEventListener("paste", function(e) {
-    const pasteData = (e.clipboardData || window.clipboardData).getData('text');
-
-    if(/\D/.test(pasteData)) {
-        e.preventDefault();
-        errorMsg.textContent = "Numbers only are allowed";
-        return;
-    }
-
-    // Limit pasted content to 11 digits
-    if (pasteData.length > 11) {
-        e.preventDefault();
-        contactInput.value = pasteData.slice(0, 11);
-    }
-});
-/******************************** COMPLETE BOOKING ACTION ********************************/
-document.getElementById("complete-booking").addEventListener("click", function() {
-  // Kunin ang lahat ng values nang tama
-  const fullName = document.querySelector('input[placeholder*="Full Name"]').value.trim();
-  const email = document.querySelector('input[type="email"]').value.trim();
-  const facebook = document.querySelector('input[placeholder*="@username"]').value.trim();
-  const contact = contactInput.value.trim();
-  const eventTime = document.getElementById("event-time").value;
-  const provinceSelect = document.getElementById("province");
-  const citySelect = document.getElementById("city");
-  const barangaySelect = document.getElementById("barangay");
-  const zipCode = document.getElementById("zip_code").value.trim();
-  const streetAddress = document.getElementById("street").value.trim();
-  const paymentType = document.querySelector('input[name="payment_type"]:checked')?.value;
-  const paymentMethod = document.querySelector('input[name="pay"]:checked')?.value;
-  const notes = document.querySelector('textarea').value.trim();
-  const agree = document.getElementById("agree").checked;
-
-  // ✅ VALIDATION
-  if (!fullName) return alert("Please enter your Full Name.");
-  if (!email) return alert("Please enter your Email Address.");
-  if (!facebook) return alert("Please enter your Facebook/Messenger.");
-  if (!contact || contact.length < 10) return alert("Please enter a valid Contact Number.");
-  if (!selectedDate) return alert("Please select an Event Date.");
-  if (!eventTime) return alert("Please select an Event Time.");
-  if (!provinceSelect.value) return alert("Please select a Province.");
-  if (!citySelect.value) return alert("Please select a City/Municipality.");
-  if (!barangaySelect.value) return alert("Please select a Barangay.");
-  if (!zipCode) return alert("Please enter your Zip Code.");
-  if (!streetAddress) return alert("Please enter your complete Address.");
-  if (!paymentType) return alert("Please select Payment Type.");
-  if (!paymentMethod) return alert("Please select Payment Method.");
-  if (!agree) return alert("You must agree to Terms and Conditions.");
-  if (!window.finalTotal || window.finalTotal <= 0) return alert("Total amount is invalid. Please select service and enter guests.");
-
-  // ✅ Ihanda ang data
-  const serviceName = selectedService === "coffee" ? "Coffee Booth" :
-                      selectedService === "matcha" ? "Matcha Booth" : "Tattoo Event";
-
+/******************************** SUBMIT BOOKING ********************************/
+document.getElementById("complete-booking").addEventListener("click", () => {
   const formData = new FormData();
-  formData.append("full_name", fullName);
-  formData.append("email", email);
-  formData.append("facebook", facebook);
-  formData.append("contact_number", contact);
-  formData.append("service", serviceName);
-  formData.append("guest_count", document.getElementById("guest-count").value);
-  formData.append("total_amount", window.finalTotal);
-  formData.append("event_date", selectedDate);
-  formData.append("event_time", eventTime);
-  formData.append("province", provinceSelect.options[provinceSelect.selectedIndex].dataset.name);
-  formData.append("city", citySelect.options[citySelect.selectedIndex].dataset.name);
-  formData.append("barangay", barangaySelect.value);
-  formData.append("zip_code", zipCode);
-  formData.append("street_address", streetAddress);
-  formData.append("payment_type", paymentType === "full" ? "Full Payment" : "Reservation Fee Only");
-  formData.append("payment_method", paymentMethod.toUpperCase());
-  formData.append("additional_notes", notes);
+  const guestCount = parseInt(document.getElementById("guest-count").value) || 0;
+  
+  // Validation
+  if (!document.querySelector('input[name="full_name"]').value.trim()) return alert("Please enter your Full Name.");
+  if (!document.querySelector('input[name="email"]').value.trim()) return alert("Please enter your Email Address.");
+  if (!document.querySelector('input[name="facebook"]').value.trim()) return alert("Please enter your Facebook/Messenger.");
+  if (!contactInput.value.trim() || contactInput.value.length < 10) return alert("Please enter a valid Contact Number.");
+  if (!selectedService || !currentPricing) return alert("Select a service first.");
+  if (!guestCount) return alert("Enter number of guests.");
+  if (guestCount < currentPricing.min) return alert(`⚠️ Cannot submit booking!\nMinimum of ${currentPricing.min} guests required for this package.`);
+  if (guestCount > currentPricing.max) return alert(`⚠️ Cannot submit booking!\nMaximum of ${currentPricing.max} guests only for this package.`);
+  if (!selectedDate) return alert("Select event date.");
+  if (!document.getElementById("event-time").value) return alert("Select event time.");
+  if (!document.getElementById("province").value) return alert("Select Province.");
+  if (!document.getElementById("city").value) return alert("Select City.");
+  if (!document.getElementById("barangay").value) return alert("Select Barangay.");
+  if (!document.getElementById("zip_code").value.trim()) return alert("Enter Zip Code.");
+  if (!document.getElementById("street").value.trim()) return alert("Enter complete address.");
+  if (!document.querySelector('input[name="payment_type"]:checked')) return alert("Select Payment Type.");
+  if (!document.querySelector('input[name="payment_method"]:checked')) return alert("Select Payment Option.");
+  if (!document.getElementById("agree").checked) return alert("Agree to Terms and Conditions.");
+  if (!window.finalTotal || window.finalTotal <= 0) return alert("Enter valid number of guests.");
 
-  // ✅ Ipadala sa tamang lokasyon
+  // Append data
+  formData.append('full_name', document.querySelector('input[name="full_name"]').value.trim());
+  formData.append('email', document.querySelector('input[name="email"]').value.trim());
+  formData.append('facebook', document.querySelector('input[name="facebook"]').value.trim());
+  formData.append('contact_number', contactInput.value.trim());
+  formData.append('service', selectedService);
+  formData.append('guest_count', document.getElementById("guest-count").value);
+  formData.append('total_amount', window.finalTotal);
+  formData.append('event_date', selectedDate);
+  formData.append('event_time', document.getElementById("event-time").value);
+  formData.append('province', document.querySelector('#province option:checked').dataset.name);
+  formData.append('city', document.querySelector('#city option:checked').dataset.name);
+  formData.append('barangay', document.getElementById("barangay").value);
+  formData.append('zip_code', document.getElementById("zip_code").value.trim());
+  formData.append('street_address', document.getElementById("street").value.trim());
+  formData.append('payment_type', document.querySelector('input[name="payment_type"]:checked').value);
+  formData.append('payment_method', document.querySelector('input[name="payment_method"]:checked').value);
+  formData.append('additional_notes', document.querySelector('textarea[name="additional_notes"]').value.trim());
+
+  // Submit
+    // Submit
   fetch("website_php/process_booking.php", {
     method: "POST",
     body: formData
   })
-  .then(res => res.text())
-  .then(response => {
-    response = response.trim();
-    if (response === "success") {
-      if (paymentMethod === "cash") {
-        window.location.href = "Paymentcash.php";
-      } else if (paymentMethod === "gcash") {
-        window.location.href = "Payment.php";
-      }
-    } else {
-      alert("Error: " + response);
-    }
+  .then(res => {
+    // I-check muna kung maayos ang sagot ng server
+    if (!res.ok) throw new Error("Server error: " + res.status);
+    return res.json();
   })
+  .then(data => {
+    if (data.status === "success") {
+      alert("Booking submitted successfully! Redirecting...");
+      // ✅ TAMA: Gamitin ang tamang pahina galing sa server
+      window.location.href = data.next_page;
+    } else {
+      alert("Error: " + data.message);
+    }
+})
   .catch(err => {
-    alert("Connection error: Check if server is running and process_booking.php exists.");
-    console.error(err);
+    alert("Connection error: " + err.message);
+    console.error("Full error:", err);
   });
 });
 
+/******************************** ADDRESS API ********************************/
+const provinceSelect = document.getElementById("province");
+const citySelect = document.getElementById("city");
+const barangaySelect = document.getElementById("barangay");
 
-/******************************** AUTO-SELECT SERVICE FROM PACKAGE PAGE ********************************/
-document.addEventListener("DOMContentLoaded", function() {
-    const savedService = localStorage.getItem("selectedService");
-
-    if (savedService) {
-        const serviceBoxes = document.querySelectorAll(".service-box");
-
-        // Ibalik sa normal ang lahat
-        serviceBoxes.forEach(box => {
-            box.style.background = "white";
-            box.style.color = "#114500";
-            box.style.pointerEvents = "auto";
-            box.style.opacity = "1";
-        });
-
-        // Hanapin at i-highlight ang napiling service
-        serviceBoxes.forEach(box => {
-            const title = box.querySelector(".service-title").textContent.toLowerCase();
-
-            if (
-                (savedService === "coffee" && title.includes("coffee")) ||
-                (savedService === "matcha" && title.includes("matcha")) ||
-                (savedService === "tattoo" && title.includes("tattoo"))
-            ) {
-                box.style.background = "#114500";
-                box.style.color = "white";
-                selectedService = savedService;
-
-                // Ipakita agad ang tamang presyo
-                computeTotal();
-            }
-        });
-
-        // Burahin mula sa storage para hindi maulit sa susunod
-        localStorage.removeItem("selectedService");
-    }
-});
-
-/******************************** PHILIPPINE AUTO-LOAD ADDRESS (MODIFIED FOR CALABARZON) **********/
-    const provinceSelect = document.getElementById("province");
-    const citySelect = document.getElementById("city");
-    const barangaySelect = document.getElementById("barangay");
-
-// Load Provinces - Filtered for CALABARZON (Region Code: 040000000)
 fetch("https://psgc.gitlab.io/api/provinces/")
   .then(res => res.json())
   .then(data => {
-    // Filter for CALABARZON region (regionCode: '040000000')
-    const calabarzonProvinces = data.filter(province => province.regionCode === '040000000');
-    
-    calabarzonProvinces.sort((a, b) => a.name.localeCompare(b.name));
-    provinceSelect.innerHTML = `<option value="">Select Province</option>`; // Reset options
-    calabarzonProvinces.forEach(province => {
-      provinceSelect.innerHTML += `<option value="${province.code}" data-name="${province.name}">${province.name}</option>`;
-    });
-  })
-  .catch(error => {
-      console.error("Error fetching provinces:", error);
-      provinceSelect.innerHTML = `<option value="">Error loading provinces</option>`;
+    const calabarzon = data.filter(p => p.regionCode === '040000000');
+    calabarzon.forEach(p => provinceSelect.innerHTML += `<option value="${p.code}" data-name="${p.name}">${p.name}</option>`);
   });
 
-// When Province changes → load Cities
-provinceSelect.addEventListener("change", function () {
-  const provinceCode = this.value;
-  const provinceName = this.options[this.selectedIndex].dataset.name; // Get the name
-
+provinceSelect.addEventListener("change", () => {
+  const code = provinceSelect.value;
   citySelect.innerHTML = `<option value="">Loading...</option>`;
-  barangaySelect.innerHTML = `<option value="">Select Barangay</option>`; // Reset barangay when province changes
-
-  if (!provinceCode) { // If no province is selected
-      citySelect.innerHTML = `<option value="">Select City</option>`;
-      return;
-  }
-
-  fetch(`https://psgc.gitlab.io/api/provinces/${provinceCode}/cities-municipalities/`)
+  barangaySelect.innerHTML = `<option value="">Select Barangay</option>`;
+  if (!code) { citySelect.innerHTML = `<option value="">Select City</option>`; return; }
+  fetch(`https://psgc.gitlab.io/api/provinces/${code}/cities-municipalities/`)
     .then(res => res.json())
     .then(data => {
       citySelect.innerHTML = `<option value="">Select City</option>`;
-      data.sort((a, b) => a.name.localeCompare(b.name));
-
-      data.forEach(city => {
-        citySelect.innerHTML += `<option value="${city.code}" data-name="${city.name}">${city.name}</option>`; // Store name
-      });
-    })
-    .catch(error => {
-        console.error("Error fetching cities:", error);
-        citySelect.innerHTML = `<option value="">Error loading cities</option>`;
+      data.forEach(c => citySelect.innerHTML += `<option value="${c.code}" data-name="${c.name}">${c.name}</option>`);
     });
 });
 
-// When City changes → load Barangays
-citySelect.addEventListener("change", function () {
-  const cityCode = this.value;
-  const cityName = this.options[this.selectedIndex].dataset.name; // Get the name
-
+citySelect.addEventListener("change", () => {
+  const code = citySelect.value;
   barangaySelect.innerHTML = `<option value="">Loading...</option>`;
-
-  if (!cityCode) { // If no city is selected
-      barangaySelect.innerHTML = `<option value="">Select Barangay</option>`;
-      return;
-  }
-
-  fetch(`https://psgc.gitlab.io/api/cities-municipalities/${cityCode}/barangays/`)
+  if (!code) { barangaySelect.innerHTML = `<option value="">Select Barangay</option>`; return; }
+  fetch(`https://psgc.gitlab.io/api/cities-municipalities/${code}/barangays/`)
     .then(res => res.json())
     .then(data => {
       barangaySelect.innerHTML = `<option value="">Select Barangay</option>`;
-      data.sort((a, b) => a.name.localeCompare(b.name));
-
-      data.forEach(brgy => {
-        barangaySelect.innerHTML += `<option value="${brgy.name}">${brgy.name}</option>`;
-      });
-    })
-    .catch(error => {
-        console.error("Error fetching barangays:", error);
-        barangaySelect.innerHTML = `<option value="">Error loading barangays</option>`;
+      data.forEach(b => barangaySelect.innerHTML += `<option value="${b.name}">${b.name}</option>`);
     });
 });
 
-
+/******************************** INITIALIZE ********************************/
+document.addEventListener("DOMContentLoaded", () => {
+  loadPackages();
+  loadBookedDates();
+  document.getElementById("guest-count").addEventListener("input", computeTotal);
+});
 </script>
+</body>
 </html>
