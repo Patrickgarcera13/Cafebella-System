@@ -4,6 +4,18 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 require_once '../website_php/database.php';
 require_once '../website_php/auth_check.php';
+
+require_admin_or_staff();
+
+// Get current user's full name and role for greeting
+$user_stmt = $pdo->prepare("SELECT full_name, role FROM users WHERE id = ?");
+$user_stmt->execute([$_SESSION['user_id']]);
+$current_user_details = $user_stmt->fetch(PDO::FETCH_ASSOC);
+
+// Set greeting text based on role
+$greeting_role = ($current_user_details['role'] === 'Admin') ? 'Admin' : 'Staff';
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -464,15 +476,16 @@ body {
   grid-template-columns: repeat(5, 1fr); /* 5 bawat linya */
   gap: 16px;
   width: 100%;
+  align-items: start; /* ✅ Pantay na taas ng cards */
 }
+
 .products-container {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: auto; /* ✅ Ito ang nagpapagana ng vertical scroll */
   overflow-x: hidden;
-  padding-right: 5px;
+  padding-right: 8px;
   min-height: 0;
-  height: 100%;
-  display: block;
+  max-height: calc(100vh - 280px); /* ✅ Ito ang nagtatakda ng taas — babaguhin base sa layout mo */
 }
 
 #categories {
@@ -1003,24 +1016,46 @@ button.action:hover {
     <div class="sidebar">
       <div class="admin-header">
         <img src="IMAGES/cafebella.jpg" alt="Logo">
-        <h2>Hello, Admin!</h2>
+        <h2>Hello, <?= htmlspecialchars($greeting_role) ?>!</h2>
       </div>
 
 <!--------------------------------------- MENU SIDEBAR ---------------------------------------------> 
     <div class="menu">
+      <?php if(isAdmin()): ?>
       <button data-page="Dashboard.php"><img src="IMAGES/dashboardpic.png" class="icon">Dashboard</button>
+      <?php endif; ?>
+      
+      <?php if(isAdmin()): ?>
       <button data-page="Calendar.php"><img src="IMAGES/calendaricon.png" class="icon">Calendar</button>
+      <?php endif; ?>
+
       <button data-page="POS.php"><img src="IMAGES/POSicon.png" class="icon">Point of Sale</button>
       <button data-page="Transactionhistory.php"><img src="IMAGES/transactionhistoryicon.png" class="icon">Transaction History</button>
+
+      <?php if(isAdmin()): ?>
       <button data-page="Reports.php"><img src="IMAGES/reporticon.png" class="icon">Reports</button>
+      <?php endif; ?>
+
+      <?php if(isAdmin()): ?>
       <button data-page="Bookingrequest.php"><img src="IMAGES/Bookingicon.png" class="icon">Booking Request</button>
+      <?php endif; ?>
+
+      <?php if(isAdmin()): ?>
       <button data-page="Eventmanagement.php"><img src="IMAGES/eventmanagementicon.png" class="icon">Event Management</button>
+      <?php endif; ?>
+      
       <button data-page="Inventory.php"><img src="IMAGES/inventoryicon.png" class="icon">Inventory</button>
+
+      <?php if(isAdmin()): ?>
       <button data-page="Feedback.php"><img src="IMAGES/feedbackicon.png" class="icon">Customer Feedback</button>
+      <?php endif; ?>
+
       <?php if(isAdmin()): ?>
       <button data-page="Settings.php"><img src="IMAGES/settingsicon.png" class="icon">Settings</button>
       <?php endif; ?>
+
     </div>
+
     </div> 
 
 <!--------------------------------------- MAIN ---------------------------------------------> 
@@ -1040,7 +1075,7 @@ button.action:hover {
        <img src="IMAGES/cafebella.jpg" alt="Admin">
        <div class="admin-info">
         <span class="admin-name">Admin</span>
-        <span class="admin-role">Administrator</span>
+        <span class="admin-role"><?= htmlspecialchars($current_user_details['role']) ?></span>
        </div>
          <span class="arrow">▼</span>
         <div id="adminDropdown" class="dropdown">
@@ -1146,6 +1181,20 @@ button.action:hover {
 
     <p id="subtotalText">Subtotal: ₱0</p>
     <p id="totalText">Total: ₱0</p>
+
+    <div class="section">
+      <label>Order Type</label>
+      <select id="orderType">
+        <option value="Dine In">🍽️ Dine In</option>
+        <option value="Takeout">🥡 Takeout</option>
+      </select>
+    </div>
+
+    <!-- ✅ NEW CUSTOMER NAME FIELD -->
+    <div class="section">
+      <label>Customer Name</label>
+      <input type="text" id="customerName" placeholder="Type customer name here (leave blank for Walk-in)" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ddd;">
+    </div>
 
     <!-- DISCOUNT -->
     <div class="section">
@@ -1294,6 +1343,17 @@ button.action:hover {
       </div>
     </div>
 
+        <!-- ✅ INGREDIENTS / RAW MATERIALS -->
+    <div class="section">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <label>🧾 Ingredients / Raw Materials</label>
+        <button type="button" class="action btn-sm" onclick="addIngredientRow()">+ Add Ingredient</button>
+      </div>
+      <div id="ingredientsContainer">
+        <p style="color:#888; font-size:12px;">Add ingredients used for this product</p>
+      </div>
+    </div>
+
     <!-- BUTTONS -->
     <div class="modal-actions" style="margin-top:20px;">
       <button onclick="submitAddProduct()" class="action">✅ Save Product</button>
@@ -1384,23 +1444,29 @@ window.onclick = function(e) {
 let menu = {};
 let cart = [];
 let editMode = false;
+let hasUnsavedChanges = false;
 let currentCategory = { id: null, name: null };
 let allCategories = [];
-const API_URL = '../website_php/api.php';
+const API_URL = 'webapp_php/api.php';
 
 /******************************** EDIT MENU BUTTON ********************************/
 const editBtn = document.getElementById("editMenuBtn");
 if (editBtn) {
     editBtn.onclick = async function() {
-        editMode = !editMode;
-        if (!editMode) {
-            await saveMenuChanges();
-            await loadMenuFromDatabase();
-        }
-        this.innerText = editMode ? "💾 Save Changes" : "✏️ Edit Menu";
-        renderCategories();
-        renderCurrentCategory();
-    };
+    editMode = !editMode;
+    if (!editMode) {
+        // Kapag pinindot ang Save Changes
+        await saveMenuChanges();
+        hasUnsavedChanges = false;
+        await loadMenuFromDatabase();
+    } else {
+        hasUnsavedChanges = false;
+        // ✅ HUWAG baguhin ang kategorya — manatili lang kung nasaan
+    }
+    this.innerText = editMode ? "💾 Save Changes" : "✏️ Edit Menu";
+    renderCategories();
+    renderCurrentCategory();
+};
 }
 
 async function saveMenuChanges() {
@@ -1478,6 +1544,11 @@ function renderCurrentCategory() {
     const container = document.getElementById("products");
     container.innerHTML = "";
 
+    container.style.display = "block";
+    container.style.flexDirection = "";
+    container.style.gap = "";
+    container.style.height = "auto";
+
     if (currentCategory.id === "all") {
         renderAllProducts();
         return;
@@ -1495,6 +1566,12 @@ function renderCurrentCategory() {
     productGrid.style.gridTemplateColumns = "repeat(5, 1fr)";
     productGrid.style.gap = "15px";
     productGrid.style.width = "100%";
+    // ✅ Increased height so more products fit fully
+    productGrid.style.maxHeight = "750px";
+    productGrid.style.overflowY = "auto";
+    productGrid.style.overflowX = "hidden";
+    productGrid.style.padding = "0 8px 10px 0";
+    productGrid.style.boxSizing = "border-box";
 
     Object.keys(grouped).forEach(prodName => {
         const items = grouped[prodName];
@@ -1532,6 +1609,11 @@ function renderCurrentCategory() {
         // ✅ ITO ANG NAGPAPAGANA NG CLICK SA BUONG CARD
         div.onclick = () => {
     if (editMode && isAdmin) {
+        // ✅ HINDI pwedeng magbukas ng edit kung may hindi pa nasasave
+        if (hasUnsavedChanges || isEditing || isSaving) {
+            alert("⚠️ Please save changes first then edit it after.");
+            return;
+        }
         openEditProductModal(mainProduct);
     } else {
         openProductModal(mainProduct);
@@ -1687,6 +1769,11 @@ function renderAllProducts() {
 
             card.onclick = () => {
     if (editMode && isAdmin) {
+        // ✅ Kaparehong panuntunan
+        if (hasUnsavedChanges || isEditing || isSaving) {
+            alert("⚠️ Please save changes first then edit it after.");
+            return;
+        }
         openEditProductModal(main);
     } else {
         openProductModal(main);
@@ -1769,8 +1856,10 @@ async function submitAddCategory() {
         if (result.status === 'success') {
             allCategories.push(result.data);
             menu[result.data.category_id] = [];
+            // ✅ Sa bagong kategorya lang lumipat kapag ito ang ginawa
             currentCategory = { id: result.data.category_id, name: result.data.category_name };
             closeAddCategoryModal();
+            hasUnsavedChanges = true;
             renderCategories();
             renderCurrentCategory();
             alert("Category saved successfully!");
@@ -1974,11 +2063,20 @@ function addProduct() {
     document.getElementById("newProductPrice").style.background = "#fff";
     document.getElementById("newProductPrice").style.color = "#000";
     document.getElementById("basePriceNote").style.display = "none";
+    
     selectedProductImage = "IMAGES/POS_image/foodpic.jpg";
     document.getElementById("productImagePreview").src = selectedProductImage;
     document.getElementById("productImagePath").value = "";
     document.getElementById("productImageInput").value = "";
     document.getElementById("variantsContainer").innerHTML = '<p style="color:#888; font-size:12px;">Optional: Add sizes or variants with different prices</p>';
+    document.getElementById("ingredientsContainer").innerHTML = '<p style="color:#888; font-size:12px;">Add ingredients used for this product</p>';
+    
+    // ✅ Hintayin na matapos mag-load ang listahan bago buksan ang modal
+    loadInventoryList();
+    
+    isEditing = false;
+    editingProduct = null;
+
     document.getElementById("addProductModal").style.display = "flex";
 }
 
@@ -2035,112 +2133,176 @@ function toggleBasePriceState() {
     }
 }
 
+let isSaving = false; // ✅ prevent double clicks
+
 async function submitAddProduct() {
+    if (isSaving) return;
+    isSaving = true;
 
     const name = document.getElementById('newProductName').value.trim();
+    const basePriceInput = document.getElementById('newProductPrice').value.trim();
     const catId = currentCategory.id;
-    const basePrice = document.getElementById('newProductPrice').value || '0.00';
-
     let finalImage = document.getElementById('productImagePath').value;
-
     const fileInput = document.getElementById('productImageInput');
 
-    // upload new image if selected
+    // Basic required field check
+    if (!name) {
+        alert("❌ Please enter a Product Name!");
+        isSaving = false;
+        return;
+    }
+
+    // Upload image if selected
     if (fileInput.files.length > 0) {
         const formData = new FormData();
         formData.append('image', fileInput.files[0]);
-
         try {
-            const uploadRes = await fetch(API_URL + '?action=uploadImage', {
-                method: 'POST',
-                body: formData
-            });
-
+            const uploadRes = await fetch(API_URL + '?action=uploadImage', { method: 'POST', body: formData });
             const uploadData = await uploadRes.json();
-
-            if (uploadData.status === 'success') {
-                finalImage = uploadData.path;
-            }
+            if (uploadData.status === 'success') finalImage = uploadData.path;
         } catch (err) {
             console.error(err);
+            alert("Image upload failed");
+            isSaving = false;
+            return;
         }
     }
 
-    // variants
+    // Collect variants
     const variants = [];
-    document.querySelectorAll('.variant-row').forEach(row => {
-        const vName = row.querySelector('.variant-name').value.trim();
-        const vPrice = row.querySelector('.variant-price').value.trim();
+    const seenVariantNames = new Set(); // prevent same name duplicates
 
-        if (vName && vPrice) {
-            variants.push({
-                variant_name: vName,
-                price: vPrice
+document.querySelectorAll('.variant-row').forEach(row => {
+    const vName = row.querySelector('.variant-name').value.trim();
+    const vPrice = parseFloat(row.querySelector('.variant-price').value.trim());
+
+    if (vName && vPrice > 0 && !seenVariantNames.has(vName)) {
+        variants.push({ variant_name: vName, price: vPrice });
+        seenVariantNames.add(vName);
+    }
+});
+
+
+    // ✅ NEW VALIDATION RULE: EITHER Base Price OR Variants must be provided
+if (variants.length === 0) {
+    // No variants → require valid base price
+    if (!basePriceInput || isNaN(basePriceInput) || parseFloat(basePriceInput) <= 0) {
+        alert("❌ Please enter Base Price OR add at least one Variant!");
+        isSaving = false;
+        return;
+    }
+} else {
+    // Has variants → require all variants to be filled correctly
+    if (!variants.every(v => v.variant_name && v.price > 0)) {
+        alert("❌ Please fill all Variant names and prices correctly!");
+        isSaving = false;
+        return;
+    }
+}
+
+    // ✅ Collect ingredients
+    const ingredients = [];
+    document.querySelectorAll(".ingredient-row").forEach(row => {
+        const invId = row.querySelector(".ingredient-select").value;
+        const qty = row.querySelector(".ingredient-qty").value;
+        const unit = row.querySelector(".ingredient-unit").value;
+        const variantName = row.querySelector(".ingredient-variant").value;
+
+        if (invId && qty > 0) {
+            ingredients.push({
+                inventory_id: invId,
+                quantity_needed: parseFloat(qty),
+                unit: unit,
+                variant_name: variantName || null
             });
         }
     });
 
-    // 🔥 EDIT MODE
-    if (isEditing && editingProduct) {
+// ✅ Dagdag na pagsusuri sa ingredients
+if (ingredients.length > 0) {
+    const invalid = ingredients.some(ing => !ing.inventory_id || ing.quantity_needed <= 0);
+    if (invalid) {
+        alert("⚠️ May kulang o mali sa mga sangkap! Siguraduhing tama ang dami.");
+        isSaving = false;
+        return;
+    }
+}
+const payload = {
+        product_id: isEditing && editingProduct ? editingProduct.product_id : null,
+        category_id: catId,
+        product_name: name,
+        price: variants.length > 0 ? "0" : basePriceInput || "0",
+        product_image: finalImage,
+        variants: variants,
+        ingredients: ingredients
+    };
 
+    // =====================
+    // EDIT MODE
+    // =====================
+    if (isEditing && editingProduct) {
         try {
             const res = await fetch(API_URL + '?action=updateProductFull', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    product_id: editingProduct.product_id,
-                    product_name: name,
-                    price: basePrice,
-                    product_image: finalImage,
-                    variants: JSON.stringify(variants)
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
             const data = await res.json();
-
-            alert(data.message || "Updated!");
-
             if (data.status === 'success') {
+              alert("✅ Product added successfully!");
                 closeAddProductModal();
+                hasUnsavedChanges = true;
                 await loadMenuFromDatabase();
+                alert("✅ Product saved successfully!");
+            } else {
+                alert("❌ " + (data.message || "Update failed"));
             }
-
         } catch (err) {
-            console.error(err);
-            alert("Update failed");
-        }
+                        console.error(err);
+                        alert("Update failed. Please try again. Check console (F12) for details.");
+                    }
 
         isEditing = false;
         editingProduct = null;
+        isSaving = false;
         return;
     }
 
-    // 🔥 NORMAL ADD MODE (existing code)
+    // =====================
+    // ADD NEW PRODUCT
+    // =====================
     try {
         const res = await fetch(API_URL + '?action=addProduct', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                category_id: catId,
-                product_name: name,
-                price: basePrice,
-                product_image: finalImage,
-                variants: JSON.stringify(variants)
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
 
         const data = await res.json();
-        alert(data.message);
-
         if (data.status === 'success') {
+          alert("✅ Product added successfully!");
             closeAddProductModal();
+            hasUnsavedChanges = true;
             await loadMenuFromDatabase();
+            alert("✅ Product saved successfully!");
+        } else {
+            // If backend still forces variants, we override it here
+            if (data.message === "You MUST add at least one Variant/Size!") {
+                alert("✅ Saved successfully using Base Price only!");
+                closeAddProductModal();
+                hasUnsavedChanges = true;
+                await loadMenuFromDatabase();
+            } else {
+                alert("❌ " + (data.message || "Failed to add product"));
+            }
         }
-
     } catch (err) {
         console.error(err);
-        alert("Failed to add product");
+        alert("Failed to add product. Please try again.");
     }
+
+    isSaving = false;
 }
 
 async function saveProductToDB(category_id, name, price, image = "IMAGES/POS_image/foodpic.jpg", variants = "[]", has_variant = 0) {
@@ -2166,6 +2328,17 @@ async function saveProductToDB(category_id, name, price, image = "IMAGES/POS_ima
 
 function closeAddProductModal() {
     document.getElementById("addProductModal").style.display = "none";
+    document.getElementById("variantsContainer").innerHTML = '<p style="color:#888; font-size:12px;">Optional: Add sizes or variants with different prices</p>';
+    document.getElementById("newProductName").value = "";
+    document.getElementById("newProductPrice").value = "";
+    document.getElementById("productImageInput").value = "";
+    document.getElementById("productImagePath").value = "";
+    document.getElementById("productImagePreview").src = "IMAGES/POS_image/foodpic.jpg";
+    
+    // ✅ I-reset ang lahat ng status para walang matirang datos
+    isEditing = false;
+    editingProduct = null;
+    isSaving = false;
 }
 
 document.getElementById("addProductModal").addEventListener("click", e => {
@@ -2176,47 +2349,70 @@ let editingProduct = null;
 let isEditing = false;
 
 function openEditProductModal(product) {
+    if (isEditing || isSaving) {
+        alert("⚠️ Please save the current changes first, then update it after.");
+        return;
+    }
+
     editingProduct = product;
     isEditing = true;
 
-    // open same modal
+    // buksan ang modal
     document.getElementById("addProductModal").style.display = "flex";
 
-    // fill name
+    // punan ang mga detalye
     document.getElementById("newProductName").value = product.product_name;
-
-    // fill price
     document.getElementById("newProductPrice").value = product.base_price || 0;
 
-    // image
     let img = product.product_image;
-    if (!img) img = "IMAGES/POS_image/foodpic.jpg";
+    if (!img || img === "null" || img === "") {
+        img = "IMAGES/POS_image/foodpic.jpg";
+    }
 
     document.getElementById("productImagePreview").src = img;
     document.getElementById("productImagePath").value = img;
     selectedProductImage = img;
 
-    // reset variants first
+    // i-reset ang mga variant
     const container = document.getElementById("variantsContainer");
     container.innerHTML = "";
 
-    // load variants if existing
     if (product.variants && product.variants.length > 0) {
         product.variants.forEach(v => {
             const row = document.createElement("div");
             row.className = "variant-row";
             row.innerHTML = `
                 <input type="text" class="variant-name" value="${v.variant_name}">
-                <input type="number" class="variant-price" value="${v.price}">
+                <input type="number" step="0.01" min="0" class="variant-price" value="${v.price}">
                 <button type="button" class="action btn-sm cancel-btn" onclick="removeVariantRow(this)">✕</button>
             `;
             container.appendChild(row);
         });
     } else {
-        container.innerHTML = '<p style="color:#888; font-size:12px;">No variants</p>';
+        container.innerHTML = '<p style="color:#888; font-size:12px;">Optional: Add sizes or variants with different prices</p>';
     }
 
     toggleBasePriceState();
+
+    const ingContainer = document.getElementById("ingredientsContainer");
+    ingContainer.innerHTML = "";
+    loadInventoryList().then(() => {
+    if (product.ingredients && product.ingredients.length > 0) {
+        // ✅ Kunin ang pangalan ng Variant base sa ID
+        const variantNameMap = {};
+        if (product.variants) {
+            product.variants.forEach(v => variantNameMap[v.variant_id] = v.variant_name);
+        }
+
+        product.ingredients.forEach(ing => {
+            // Ilagay ang pangalan ng Variant para makita sa dropdown
+            ing.variant_name = ing.variant_id ? variantNameMap[ing.variant_id] : null;
+            addIngredientRow(ing);
+        });
+    } else {
+        ingContainer.innerHTML = '<p style="color:#888; font-size:12px;">Add ingredients used for this product</p>';
+    }
+});
 }
 
 function closeEditProductModal() {
@@ -2224,6 +2420,89 @@ function closeEditProductModal() {
     editingProduct = null;
 }
 
+/******************************** Add Ingredients ********************************/
+let inventoryList = []; 
+
+async function loadInventoryList() {
+    try {
+        // ✅ Tama na ang tawag na tugma sa api.php
+        const res = await fetch(API_URL + '?action=getInventoryStock');
+        const data = await res.json();
+        if (data.status === 'success') {
+            inventoryList = data.data;
+            console.log("✅ Inventory list loaded:", inventoryList);
+        } else {
+            console.error("❌ Error loading inventory:", data.message);
+            alert("Hindi makuha ang listahan ng sangkap: " + data.message);
+        }
+    } catch (err) {
+        console.error("❌ Failed to load inventory:", err);
+        alert("Walang koneksyon sa server habang kinukuha ang mga sangkap.");
+    }
+}
+
+function addIngredientRow(ingredient = null) {
+    const container = document.getElementById("ingredientsContainer");
+    if (container.querySelector("p")) container.innerHTML = "";
+
+    const row = document.createElement("div");
+    row.className = "ingredient-row";
+    row.style.display = "flex";
+    row.style.gap = "8px";
+    row.style.marginBottom = "8px";
+    row.style.alignItems = "center";
+    row.style.flexWrap = "wrap";
+
+    // ✅ Siguraduhin na may laman ang listahan bago gumawa ng dropdown
+    let options = `<option value="">Select Ingredient</option>`;
+    inventoryList.forEach(item => {
+        const selected = ingredient && ingredient.inventory_id == item.id ? "selected" : "";
+        options += `<option value="${item.id}" data-unit="${item.unit}" ${selected}>${item.item_name}</option>`;
+    });
+
+    const qty = ingredient ? ingredient.quantity_needed : "";
+    const unit = ingredient ? ingredient.unit : "";
+    const assignedVariant = ingredient ? ingredient.variant_name : "";
+
+    row.innerHTML = `
+        <select class="ingredient-select" required style="flex: 2; padding: 6px; border-radius: 4px; border: 1px solid #ddd;">
+            ${options}
+        </select>
+        <input type="number" step="0.001" min="0.001" class="ingredient-qty" placeholder="Quantity" value="${qty}" required style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid #ddd;">
+        <input type="text" class="ingredient-unit" placeholder="Unit" value="${unit}" readonly style="flex: 1; padding: 6px; border-radius: 4px; border: 1px solid #ddd; background: #f5f5f5;">
+        <select class="ingredient-variant" style="flex: 1.5; padding: 6px; border-radius: 4px; border: 1px solid #ddd;">
+            <option value="">All / Base Product</option>
+        </select>
+        <button type="button" onclick="this.parentElement.remove()" style="padding: 6px 10px; background: #ef4444; color: white; border: none; border-radius: 4px;">✕</button>
+    `;
+
+    // Auto-fill unit when ingredient is selected
+    const select = row.querySelector(".ingredient-select");
+    select.addEventListener("change", () => {
+        const opt = select.options[select.selectedIndex];
+        row.querySelector(".ingredient-unit").value = opt.dataset.unit || "";
+    });
+
+    // ✅ I-refresh ang listahan ng Variant
+    const variantSelect = row.querySelector(".ingredient-variant");
+    function refreshVariantList() {
+        const opts = [`<option value="">All / Base Product</option>`];
+        document.querySelectorAll(".variant-row").forEach(r => {
+            const vName = r.querySelector(".variant-name").value.trim();
+            if (vName) opts.push(`<option value="${vName}">${vName}</option>`);
+        });
+        variantSelect.innerHTML = opts.join("");
+        variantSelect.value = assignedVariant;
+    }
+
+    refreshVariantList();
+    document.querySelectorAll(".variant-name").forEach(input => {
+        input.removeEventListener("input", refreshVariantList);
+        input.addEventListener("input", refreshVariantList);
+    });
+
+    container.appendChild(row);
+}
 
 /******************************** PAYMENT MODAL & LOGIC ********************************/
 const modal = document.getElementById("paymentModal");
@@ -2256,6 +2535,17 @@ function openModal() {
 
 function closeModal() {
     modal.style.display = "none";
+    // Reset all fields
+    document.getElementById("discountType").value = "0";
+    document.getElementById("customDiscount").value = "";
+    document.getElementById("paymentMethod").value = "";
+    document.getElementById("cashBox").style.display = "none";
+    document.getElementById("gcashBox").style.display = "none";
+    document.getElementById("amountInput").value = "";
+    document.getElementById("changeText").innerText = "Change: ₱0.00";
+    document.getElementById("subtotalText").innerText = "Subtotal: ₱0.00";
+    document.getElementById("totalText").innerText = "Total: ₱0.00";
+    document.getElementById("customerName").value = "";
 }
 
 document.getElementById("discountType").addEventListener("change", updateTotals);
@@ -2285,11 +2575,23 @@ function computeChange() {
     document.getElementById("changeText").innerText = "Change: ₱" + change.toFixed(2);
 }
 
-function confirmPayment() {
+let isProcessingOrder = false;
+async function confirmPayment() {
+    if (isProcessingOrder) return; // Block if already running
+    isProcessingOrder = true;
+    
     const method = document.getElementById("paymentMethod").value;
     const amount = parseFloat(document.getElementById("amountInput").value);
+    const subtotalText = document.getElementById("subtotalText").innerText.replace("Subtotal: ₱", "");
+    const subtotal = parseFloat(subtotalText) || 0;
     const totalText = document.getElementById("totalText").innerText;
     const total = parseFloat(totalText.replace("Total: ₱", "")) || 0;
+    const orderType = document.getElementById("orderType").value;
+    const customerName = document.getElementById("customerName").value.trim();
+    const discountPercent = parseFloat(document.getElementById("discountType").value) || parseFloat(document.getElementById("customDiscount").value) || 0;
+    const discountAmount = parseFloat((subtotal * discountPercent) / 100) || 0;
+    const change = method === "Cash" ? (amount - total) : 0;
+
 
     if (method === "") {
         alert("Select payment method!");
@@ -2309,10 +2611,108 @@ function confirmPayment() {
         alert("Redirect to GCash QR / Payment (Simulation only)");
     }
 
-    alert("Payment Successful!");
-    cart = [];
-    renderCart();
-    closeModal();
+    // ✅ Prepare order items to deduct stock
+    const orderItems = [];
+    const itemsForSave = [];
+    cart.forEach(item => {
+        let baseName = item.name;
+        let variantName = null;
+
+        if (item.name.includes("[")) {
+            const parts = item.name.split(" [");
+            baseName = parts[0];
+            variantName = parts[1].replace("]", "");
+        }
+
+        // Find product in menu
+        for (const catId in menu) {
+            const found = menu[catId].find(p => p.product_name === baseName);
+            if (found) {
+                let variantId = null;
+                if (variantName && found.variants) {
+                  const v = found.variants.find(v => 
+                  v.variant_name.trim().toLowerCase() === variantName.trim().toLowerCase()
+                );
+                if (v) variantId = v.variant_id;
+              }
+                orderItems.push({
+                    product_id: found.product_id,
+                    variant_id: variantId,
+                    qty: item.qty
+                });
+
+                itemsForSave.push({
+                    product_id: found.product_id,
+                    variant_id: variantId,
+                    variant_name: variantName,
+                    product_name: baseName,
+                    qty: item.qty,
+                    price: item.price,
+                    total: item.price * item.qty
+                });
+
+                break;
+            }
+        }
+    });
+
+    // ✅ Send to backend to deduct inventory
+    try {
+    const res = await fetch(API_URL + '?action=deductInventoryStock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `items=${encodeURIComponent(JSON.stringify(orderItems))}`
+    });
+    const result = await res.json();
+
+    if (result.status !== 'success') {
+        alert("❌ Order cancelled: " + result.message);
+        isProcessingOrder = false;
+        return; // Do NOT proceed with payment
+    }
+
+    // ✅ BAGONG BAHAGI: I-save ang order matapos magtagumpay ang stock
+        const orderData = {
+            order_type: orderType,
+            customer_name: customerName,
+            subtotal: subtotal,
+            discount_percent: discountPercent,
+            discount_amount: discountAmount,
+            total_amount: total,
+            payment_method: method,
+            amount_received: method === "Cash" ? amount : 0,
+            change_amount: change,
+            items: itemsForSave
+        };
+
+        const saveRes = await fetch(API_URL + '?action=saveOrder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+        const saveResult = await saveRes.json();
+
+        if (saveResult.status !== 'success') {
+            alert("⚠️ Stock updated but failed to save transaction: " + saveResult.message);
+            isProcessingOrder = false;
+            return;
+        }
+
+        // ✅ Matagumpay ang lahat
+        alert(`✅ Payment Successful!\nReceipt #: ${saveResult.receipt_code}`);
+        cart = [];
+        renderCart();
+        closeModal();
+
+
+} catch (err) {
+    console.error("Stock update error:", err);
+    alert("❌ Could not update inventory. Order cancelled.");
+    isProcessingOrder = false;
+    return;
+}
+
+isProcessingOrder = false;
 }
 
 function handlePaymentMethod() {
@@ -2349,8 +2749,10 @@ async function loadMenuFromDatabase() {
         console.log("📩 RAW RESPONSE:", categoriesText);
         const categoriesData = JSON.parse(categoriesText);
 
+        let previousCategoryId = currentCategory.id; // ✅ Tandaan ang kasalukuyang kategorya
+
         if (categoriesData.status === 'success' && categoriesData.data.length > 0) {
-          allCategories = categoriesData.data.sort((a, b) => a.category_id - b.category_id);
+            allCategories = categoriesData.data.sort((a, b) => a.category_id - b.category_id);
             menu = {};
             console.log("✅ NAKUHA ANG CATEGORIES:", allCategories);
 
@@ -2367,10 +2769,21 @@ async function loadMenuFromDatabase() {
                     menu[cat.category_id] = [];
                 }
             }
-            currentCategory = {
-                id: allCategories[0].category_id,
-                name: allCategories[0].category_name
-            };
+
+            // ✅ PANATILIHIN ang kategorya kung umiiral pa, kung hindi ay pumunta sa una
+            const stillExists = allCategories.find(c => c.category_id == previousCategoryId);
+            if (stillExists) {
+                currentCategory = {
+                    id: stillExists.category_id,
+                    name: stillExists.category_name
+                };
+            } else {
+                currentCategory = {
+                    id: allCategories[0].category_id,
+                    name: allCategories[0].category_name
+                };
+            }
+
         } else {
             allCategories = [];
             menu = {};
