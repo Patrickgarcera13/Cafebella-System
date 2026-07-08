@@ -2,8 +2,22 @@
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-require_once '../website_php/auth_check.php'; 
-// ... rest of your code
+require_once '../website_php/auth_check.php';
+require_admin();
+$admin_count_stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'Admin' AND is_banned = 0 AND is_approved = 1");
+$active_admin_count = $admin_count_stmt->fetchColumn();
+
+if (!isAdmin()) {
+    header("Location: ../login.html?error=unauthorized_access");
+    exit();
+}
+// Get current user's full name and role for greeting
+$user_stmt = $pdo->prepare("SELECT full_name, role FROM users WHERE id = ?");
+$user_stmt->execute([$_SESSION['user_id']]);
+$current_user_details = $user_stmt->fetch(PDO::FETCH_ASSOC);
+
+// Set greeting text based on role
+$greeting_role = ($current_user_details['role'] === 'Admin') ? 'Admin' : 'Staff';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1239,7 +1253,7 @@ body {
     <div class="sidebar">
       <div class="admin-header">
         <img src="IMAGES/cafebella.jpg" alt="Logo">
-        <h2>Hello, Admin!</h2>
+        <h2>Hello, <?= htmlspecialchars($greeting_role) ?>!</h2>
       </div>
 
 <!--------------------------------------- MENU SIDEBAR ---------------------------------------------> 
@@ -1276,7 +1290,7 @@ body {
       <img src="IMAGES/cafebella.jpg" alt="Admin">
       <div class="admin-info">
         <span class="admin-name">Admin</span>
-        <span class="admin-role">Administrator</span>
+        <span class="admin-role"><?= htmlspecialchars($current_user_details['role']) ?></span>
       </div>
       <span class="arrow">▼</span>
       <div id="adminDropdown" class="dropdown">
