@@ -6,6 +6,16 @@ if (session_status() == PHP_SESSION_NONE) {
 require_once '../website_php/auth_check.php';
 require_once '../website_php/database.php';
 
+require_admin_or_staff();
+
+// Get current user's full name and role for greeting
+$user_stmt = $pdo->prepare("SELECT full_name, role FROM users WHERE id = ?");
+$user_stmt->execute([$_SESSION['user_id']]);
+$current_user_details = $user_stmt->fetch(PDO::FETCH_ASSOC);
+
+// Set greeting text based on role
+$greeting_role = ($current_user_details['role'] === 'Admin') ? 'Admin' : 'Staff';
+
 // Kunin ang filter mula sa URL, default ay 'all'
 $filter = isset($_GET['filter']) ? $_GET['filter'] : 'all';
 
@@ -14,13 +24,13 @@ try {
     if ($filter === 'pos') {
     $sql = "SELECT 
                 receipt_code, 
-                order_date AS created_at, 
-                '' AS full_name, 
+                order_date AS created_at,
+                customer_name AS full_name,
                 order_type AS service_type, 
                 payment_method, 
                 total_amount, 
-                status,
-                order_id, -- ✅ Idinagdag
+                status, // ✅ Dito sa orders table, 'status' pa rin
+                order_id,
                 'POS' AS source
             FROM orders 
             ORDER BY order_date DESC";
@@ -32,41 +42,21 @@ try {
                 service_type, 
                 payment_method, 
                 total_amount, 
-                status,
-                NULL AS order_id, -- ✅ Idinagdag para tugma sa UNION
+                booking_status AS status, // ✅ GAWING 'status' PARA TUGMA SA FORMAT
+                NULL AS order_id,
                 'ONLINE_BOOKING' AS source
             FROM bookings 
             ORDER BY created_at DESC";
 } else {
-    $sql = "SELECT 
-                receipt_code, 
-                created_at, 
-                full_name, 
-                service_type, 
-                payment_method, 
-                total_amount, 
-                status,
-                NULL AS order_id, -- ✅ Idinagdag
-                'ONLINE_BOOKING' AS source
-            FROM bookings
-
+    $sql = "
+        SELECT * FROM (
+            SELECT receipt_code, created_at, full_name, service_type, payment_method, total_amount, booking_status AS status, NULL AS order_id, 'ONLINE_BOOKING' AS source FROM bookings
             UNION ALL
-
-            SELECT 
-                receipt_code, 
-                order_date AS created_at, 
-                '' AS full_name, 
-                order_type AS service_type, 
-                payment_method, 
-                total_amount, 
-                status,
-                order_id, -- ✅ Idinagdag
-                'POS' AS source
-            FROM orders
-
-            ORDER BY created_at DESC";
+            SELECT receipt_code, order_date AS created_at, customer_name AS full_name, order_type AS service_type, payment_method, total_amount, status, order_id, 'POS' AS source FROM orders
+        ) AS combined
+        ORDER BY created_at DESC
+    ";
 }
-
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
     $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -805,12 +795,14 @@ body {
     <div class="sidebar">
       <div class="admin-header">
         <img src="IMAGES/cafebella.jpg" alt="Logo">
-        <h2>Hello, Admin!</h2>
+        <h2>Hello, <?= htmlspecialchars($greeting_role) ?>!</h2>
       </div>
 
 <!--------------------------------------- MENU SIDEBAR ---------------------------------------------> 
     <div class="menu">
+      <?php if(isAdmin()): ?>
       <button data-page="Dashboard.php"><img src="IMAGES/dashboardpic.png" class="icon">Dashboard</button>
+      <?php endif; ?>
 
       <?php if(isAdmin()): ?>
       <button data-page="Calendar.php"><img src="IMAGES/calendaricon.png" class="icon">Calendar</button>
@@ -860,7 +852,7 @@ body {
       <img src="IMAGES/cafebella.jpg" alt="Admin">
       <div class="admin-info">
         <span class="admin-name">Admin</span>
-        <span class="admin-role">Administrator</span>
+        <span class="admin-role"><?= htmlspecialchars($current_user_details['role']) ?></span>
       </div>
       <span class="arrow">▼</span>
       <div id="adminDropdown" class="dropdown">
@@ -917,9 +909,9 @@ body {
 
     <!-- LEFT SIDE -->
   <div class="source-buttons">
-    <button class="src <?= $filter === 'all' ? 'active' : '' ?>" onclick="window.location.href='?filter=all'">ALL</button>
-    <button class="src <?= $filter === 'pos' ? 'active' : '' ?>" onclick="window.location.href='?filter=pos'">POS</button>
-    <button class="src <?= $filter === 'online' ? 'active' : '' ?>" onclick="window.location.href='?filter=online'">ONLINE BOOKING</button>
+    <button class="src <?= $filter === 'all' ? 'active' : '' ?>" onclick="setSource('all', this)">ALL</button>
+<button class="src <?= $filter === 'pos' ? 'active' : '' ?>" onclick="setSource('POS', this)">POS</button>
+<button class="src <?= $filter === 'online' ? 'active' : '' ?>" onclick="setSource('ONLINE_BOOKING', this)">ONLINE BOOKING</button>
   </div>
 
 </div> <!-- ✅ IMPORTANT CLOSING TAG -->
@@ -951,17 +943,19 @@ body {
     // ✅ Iba ang display ng pangalan depende sa source
     if ($source === 'POS') {
         $source_name = 'POS / ' . $trx['service_type'];
-        $customer_name = 'Walk-in';
+        $customer_name = !empty($trx['full_name']) ? $trx['full_name'] : 'Walk-in';
     } else {
         $source_name = $trx['service_type'] . " Booking";
         $customer_name = $trx['full_name'];
     }
 
+    // ✅ TUGMA SA BAGONG STATUS:
     $status_badge = match($trx['status']) {
-        'Completed', 'Confirmed' => '<span class="badge paid">'.htmlspecialchars($trx['status']).'</span>',
-        'Pending' => '<span class="badge pending">Pending</span>',
-        default => '<span class="badge cancelled">'.htmlspecialchars($trx['status']).'</span>'
-    };
+    'Accepted', 'Completed', 'Confirmed' => '<span class="badge paid">Approved</span>',
+    'Pending' => '<span class="badge pending">Pending</span>',
+    'Declined', 'Cancelled' => '<span class="badge cancelled">'.htmlspecialchars($trx['status']).'</span>',
+    default => '<span class="badge pending">'.htmlspecialchars($trx['status'] ?? 'Pending').'</span>'
+};
     ?>
     <tr data-source="<?= $source ?>">
         <td class="id"><?= htmlspecialchars($trx['receipt_code']) ?></td>
@@ -1036,9 +1030,9 @@ body {
   <div class="date-content">
     <h3>Filter by Status</h3>
 
-    <label><input type="radio" name="statusFilter" value="Paid"> Paid</label>
-    <label><input type="radio" name="statusFilter" value="Pending"> Pending</label>
-    <label><input type="radio" name="statusFilter" value="Cancelled"> Cancelled</label>
+    <label><input type="radio" name="statusFilter" value="Accepted"> Approved</label>
+<label><input type="radio" name="statusFilter" value="Pending"> Pending</label>
+<label><input type="radio" name="statusFilter" value="Declined"> Declined</label>
 
     <div class="date-actions">
       <button onclick="applyStatusFilter()">Apply Filter</button>
@@ -1146,27 +1140,45 @@ updateTodayDate();
 
 /******************************** SET SOURCE (ALL/POS/ONLINE BOOKING)  ********************************/
 function setSource(type, btn) {
-
-  // active button UI
+  // ✅ I-highlight ang napiling button
   document.querySelectorAll('.src').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
   const rows = document.querySelectorAll('.transaction-table tbody tr');
 
   rows.forEach(row => {
-    const source = row.getAttribute('data-source');
+    const source = row.getAttribute('data-source'); // ✅ Kunin ang value: "POS" o "ONLINE_BOOKING"
 
     if (type === 'all') {
-      row.style.display = '';
+      row.style.display = ''; // Ipakita lahat
     }
     else if (type === 'POS') {
+      // ✅ Ipakita lang kung POS
       row.style.display = (source === 'POS') ? '' : 'none';
     }
     else if (type === 'ONLINE_BOOKING') {
+      // ✅ Ipakita lang kung ONLINE BOOKING
       row.style.display = (source === 'ONLINE_BOOKING') ? '' : 'none';
     }
   });
 }
+
+/******************************** AUTO APPLY FILTER SA PAG-LOAD ********************************/
+document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentFilter = urlParams.get('filter') || 'all';
+
+    // Hanapin ang tamang button at tawagin ang function
+    const buttons = document.querySelectorAll('.src');
+    buttons.forEach(btn => {
+        const btnType = btn.textContent.trim();
+        if ((currentFilter === 'all' && btnType === 'ALL') ||
+            (currentFilter === 'pos' && btnType === 'POS') ||
+            (currentFilter === 'online' && btnType === 'ONLINE BOOKING')) {
+            setSource(currentFilter === 'online' ? 'ONLINE_BOOKING' : currentFilter.toUpperCase(), btn);
+        }
+    });
+});
 
 /******************************** VIEW TRANSACTION ********************************/
 function viewTransaction(btn, isPOS = false, orderId = 0) {
@@ -1179,7 +1191,8 @@ function viewTransaction(btn, isPOS = false, orderId = 0) {
       document.getElementById("modalBody").innerHTML = '<p style="text-align:center; padding:2rem;">Loading details...</p>';
       document.getElementById("viewModal").style.display = "flex";
 
-      fetch('../website_php/api.php?action=getTransactionDetails&order_id=' + orderId)
+      // ✅ TAMA:
+      fetch('webapp_php/api.php?action=getTransactionDetails&order_id=' + orderId)
           .then(res => res.json())
           .then(data => {
               if (data.status === 'success') {
@@ -1211,6 +1224,7 @@ function viewTransaction(btn, isPOS = false, orderId = 0) {
 
                     <div class="txn-grid">
                       <div class="txn-item"><span class="label">Date</span><span class="value">${new Date(order.order_date).toLocaleString()}</span></div>
+                      <div class="txn-item"><span class="label">Customer</span><span class="value">${order.customer_name || 'Walk-in'}</span></div>
                       <div class="txn-item"><span class="label">Type</span><span class="value">${order.order_type}</span></div>
                       <div class="txn-item"><span class="label">Payment</span><span class="value">${order.payment_method}</span></div>
                       <div class="txn-item"><span class="label">Discount</span><span class="value">${order.discount_percent > 0 ? order.discount_percent + '%' : 'None'}</span></div>
@@ -1290,4 +1304,16 @@ function viewTransaction(btn, isPOS = false, orderId = 0) {
 function closeModal() {
   document.getElementById("viewModal").style.display = "none";
 }
+
+/******************************* MISSING MODAL FUNCTIONS ********************************/
+function closeDateModal() { document.getElementById("dateModal").style.display = "none"; }
+function closeTransactionModal() { document.getElementById("transactionModal").style.display = "none"; }
+function closeAmountModal() { document.getElementById("amountModal").style.display = "none"; }
+function closeStatusModal() { document.getElementById("statusModal").style.display = "none"; }
+
+// Pansamantalang gumagana ang mga filter button
+function applyDateFilter() { alert("Date filter applied!"); closeDateModal(); }
+function applyTransactionFilter() { alert("Payment filter applied!"); closeTransactionModal(); }
+function applyAmountFilter() { alert("Sort order applied!"); closeAmountModal(); }
+function applyStatusFilter() { alert("Status filter applied!"); closeStatusModal(); }
 </script>
