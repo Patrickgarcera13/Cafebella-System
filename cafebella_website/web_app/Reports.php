@@ -4,7 +4,16 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 require_once '../website_php/auth_check.php';
 
-// ... rest of your code
+require_admin();
+
+$admin_count_stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'Admin' AND is_banned = 0 AND is_approved = 1");
+$active_admin_count = $admin_count_stmt->fetchColumn();
+
+if (!isAdmin()) {
+    header("Location: ../login.html?error=unauthorized_access");
+    exit();
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
