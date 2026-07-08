@@ -4,6 +4,22 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 require_once '../website_php/auth_check.php';
 require_once '../website_php/database.php';
+
+require_admin();
+
+if (!isAdmin()) {
+    header("Location: POS.php");
+    exit;
+}
+
+// Get current user's full name and role for greeting
+$user_stmt = $pdo->prepare("SELECT full_name, role FROM users WHERE id = ?");
+$user_stmt->execute([$_SESSION['user_id']]);
+$current_user_details = $user_stmt->fetch(PDO::FETCH_ASSOC);
+
+// Set greeting text based on role
+$greeting_role = ($current_user_details['role'] === 'Admin') ? 'Admin' : 'Staff';
+
 date_default_timezone_set('Asia/Manila');
 $today = date('Y-m-d');
 
@@ -11,16 +27,16 @@ $today = date('Y-m-d');
 $stmt = $pdo->query("SELECT COUNT(*) FROM bookings");
 $total_bookings = $stmt->fetchColumn();
 
-// Pending Requests
-$stmt = $pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'Pending'");
+// ✅ Pending Requests
+$stmt = $pdo->query("SELECT COUNT(*) FROM bookings WHERE booking_status = 'Pending'");
 $pending_requests = $stmt->fetchColumn();
 
-// Scheduled Events
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM bookings WHERE status = 'Confirmed' AND event_date >= ?");
+// ✅ Scheduled Events (Accepted at darating pa)
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM bookings WHERE booking_status = 'Accepted' AND event_date >= ?");
 $stmt->execute([$today]);
 $scheduled_events = $stmt->fetchColumn();
 
-// ✅ Low Stock (galing sa inventory table)
+// Low Stock
 $stmt = $pdo->query("SELECT COUNT(*) FROM inventory WHERE stock <= reorder_level");
 $low_stock = $stmt->fetchColumn();
 
@@ -28,6 +44,9 @@ $low_stock = $stmt->fetchColumn();
 $stmt = $pdo->prepare("SELECT COALESCE(SUM(total_amount), 0) FROM bookings WHERE DATE(created_at) = ?");
 $stmt->execute([$today]);
 $sales_today = $stmt->fetchColumn();
+
+$recent_stmt = $pdo->query("SELECT id, full_name, total_amount, payment_type, booking_status FROM bookings ORDER BY created_at DESC LIMIT 4");
+$recent_bookings = $recent_stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -643,12 +662,14 @@ body {
     <div class="sidebar">
       <div class="admin-header">
         <img src="IMAGES/cafebella.jpg" alt="Logo">
-        <h2>Hello, Admin!</h2>
+        <h2>Hello, <?= htmlspecialchars($greeting_role) ?>!</h2>
       </div>
 
 <!--------------------------------------- MENU SIDEBAR ---------------------------------------------> 
     <div class="menu">
+      <?php if(isAdmin()): ?>
       <button data-page="Dashboard.php"><img src="IMAGES/dashboardpic.png" class="icon">Dashboard</button>
+      <?php endif; ?>
 
       <?php if(isAdmin()): ?>
       <button data-page="Calendar.php"><img src="IMAGES/calendaricon.png" class="icon">Calendar</button>
@@ -700,7 +721,7 @@ body {
       <img src="IMAGES/cafebella.jpg" alt="Admin">
       <div class="admin-info">
         <span class="admin-name">Admin</span>
-        <span class="admin-role">Administrator</span>
+        <span class="admin-role"><?= htmlspecialchars($current_user_details['role']) ?></span>
       </div>
       <span class="arrow">▼</span>
       <div id="adminDropdown" class="dropdown">
@@ -806,40 +827,29 @@ body {
 
   <div class="transaction-table">
 
-    <div class="transaction-row header">
+        <div class="transaction-row header">
       <span>Order ID</span>
       <span>Customer</span>
       <span>Amount</span>
       <span>Status</span>
     </div>
 
-    <div class="transaction-row">
-      <span>#1023</span>
-      <span>Juan Dela Cruz</span>
-      <span>₱500</span>
-      <span class="status success">Paid</span>
-    </div>
-
-    <div class="transaction-row">
-      <span>#1022</span>
-      <span>Maria Santos</span>
-      <span>₱350</span>
-      <span class="status success">Paid</span>
-    </div>
-
-    <div class="transaction-row">
-      <span>#1021</span>
-      <span>Pedro Reyes</span>
-      <span>₱900</span>
-      <span class="status pending">Pending</span>
-    </div>
-
-    <div class="transaction-row">
-      <span>#1020</span>
-      <span>Ana Lopez</span>
-      <span>₱1,200</span>
-      <span class="status success">Paid</span>
-    </div>
+    <?php if (empty($recent_bookings)): ?>
+      <div class="transaction-row">
+        <span style="grid-column: 1 / -1; text-align:center; color:#666;">No recent transactions yet.</span>
+      </div>
+    <?php else: ?>
+      <?php foreach ($recent_bookings as $row): ?>
+      <div class="transaction-row">
+        <span>#<?= str_pad($row['id'], 4, '0', STR_PAD_LEFT) ?></span>
+        <span><?= htmlspecialchars($row['full_name']) ?></span>
+        <span>₱ <?= number_format($row['total_amount'], 2) ?></span>
+        <span class="status <?= $row['booking_status'] === 'Accepted' ? 'success' : ($row['booking_status'] === 'Pending' ? 'pending' : 'cancelled') ?>">
+          <?= htmlspecialchars($row['payment_type'] ?: 'Pending') ?>
+        </span>
+      </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
 
   </div>
 
